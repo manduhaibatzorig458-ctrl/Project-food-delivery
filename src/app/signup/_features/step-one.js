@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,12 +32,10 @@ export default function StepOne({
       phone: "",
     };
 
-    // NAME
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
     }
 
-    // EMAIL
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
@@ -45,12 +43,10 @@ export default function StepOne({
         "Invalid email. Use a format like example@email.com.";
     }
 
-    // ADDRESS
     if (!formData.address.trim()) {
       newErrors.address = "Address is required";
     }
 
-    // PHONE
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
     } else if (!/^[0-9+\-\s]{8,15}$/.test(formData.phone)) {
@@ -75,42 +71,41 @@ export default function StepOne({
     }
   };
 
+  const handleChange = (field, value) => {
+    setFormData({
+      ...formData,
+      [field]: value,
+    });
+
+    setErrors({
+      ...errors,
+      [field]: "",
+    });
+  };
+
   return (
-    <main className="bg-[#f5f5f5] p-2">
-      <div className="flex overflow-hidden bg-white ">
+    <main className="min-h-screen bg-[#f5f5f5] p-2 md:p-8">
+      <div className="mx-auto flex w-full min-h-[calc(100vh-16px)] max-w-[1600px] overflow-hidden rounded-2xl bg-white md:min-h-[calc(100vh-64px)]">
 
         {/* LEFT SIDE */}
-        <section className="flex w-full items-center justify-center px-8 py-10 md:w-[40%] lg:px-16">
-          <div className="w-full max-w-105">
+        <section className="flex w-full min-w-0 items-center justify-center px-8 py-10 md:w-[40%] lg:px-16">
+          <div className="w-full max-w-[420px]">
 
             {/* BACK BUTTON */}
             <button
               type="button"
               onClick={handleBack}
-              className="
-                mb-5
-                flex
-                h-7
-                w-7
-                items-center
-                justify-center
-                rounded-md
-                border
-                border-gray-200
-                text-gray-500
-                transition
-                hover:bg-gray-100
-              "
+              className="mb-5 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100"
             >
               <ChevronLeft size={14} />
             </button>
 
             {/* TITLE */}
-            <h1 className="text-lg font-semibold text-[#242428]">
+            <h1 className="text-lg font-semibold text-[#242428] md:text-xl">
               Create your account
             </h1>
 
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 md:text-sm">
               Sign up to explore your favorite dishes.
             </p>
 
@@ -119,32 +114,19 @@ export default function StepOne({
               onSubmit={handleSubmit}
               className="mt-6 flex w-full flex-col gap-4"
             >
-
               {/* NAME */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="name">
-                  Name
-                </Label>
+                <Label htmlFor="name">Name</Label>
 
                 <Input
                   id="name"
                   type="text"
                   placeholder="Enter your name"
                   value={formData.name}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      name: e.target.value,
-                    });
-
-                    setErrors({
-                      ...errors,
-                      name: "",
-                    });
-                  }}
-                  className={
-                    errors.name ? "border-red-500" : ""
+                  onChange={(e) =>
+                    handleChange("name", e.target.value)
                   }
+                  className={errors.name ? "border-red-500" : ""}
                 />
 
                 {errors.name && (
@@ -156,29 +138,17 @@ export default function StepOne({
 
               {/* EMAIL */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="email">
-                  Email
-                </Label>
+                <Label htmlFor="email">Email</Label>
 
                 <Input
                   id="email"
                   type="email"
                   placeholder="example@gmail.com"
                   value={formData.email}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      email: e.target.value,
-                    });
-
-                    setErrors({
-                      ...errors,
-                      email: "",
-                    });
-                  }}
-                  className={
-                    errors.email ? "border-red-500" : ""
+                  onChange={(e) =>
+                    handleChange("email", e.target.value)
                   }
+                  className={errors.email ? "border-red-500" : ""}
                 />
 
                 {errors.email && (
@@ -190,29 +160,17 @@ export default function StepOne({
 
               {/* ADDRESS */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="address">
-                  Address
-                </Label>
+                <Label htmlFor="address">Address</Label>
 
                 <Input
                   id="address"
                   type="text"
                   placeholder="Enter your address"
                   value={formData.address}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      address: e.target.value,
-                    });
-
-                    setErrors({
-                      ...errors,
-                      address: "",
-                    });
-                  }}
-                  className={
-                    errors.address ? "border-red-500" : ""
+                  onChange={(e) =>
+                    handleChange("address", e.target.value)
                   }
+                  className={errors.address ? "border-red-500" : ""}
                 />
 
                 {errors.address && (
@@ -224,29 +182,17 @@ export default function StepOne({
 
               {/* PHONE */}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="phone">
-                  Phone
-                </Label>
+                <Label htmlFor="phone">Phone</Label>
 
                 <Input
                   id="phone"
                   type="tel"
                   placeholder="Enter your phone number"
                   value={formData.phone}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      phone: e.target.value,
-                    });
-
-                    setErrors({
-                      ...errors,
-                      phone: "",
-                    });
-                  }}
-                  className={
-                    errors.phone ? "border-red-500" : ""
+                  onChange={(e) =>
+                    handleChange("phone", e.target.value)
                   }
+                  className={errors.phone ? "border-red-500" : ""}
                 />
 
                 {errors.phone && (
@@ -259,14 +205,7 @@ export default function StepOne({
               {/* NEXT BUTTON */}
               <Button
                 type="submit"
-                className="
-                  mt-2
-                  h-10
-                  w-full
-                  bg-[#242428]
-                  text-white
-                  hover:bg-[#35353a]
-                "
+                className="mt-2 h-10 w-full bg-[#242428] text-white hover:bg-[#35353a]"
               >
                 Let is go
               </Button>
@@ -274,19 +213,19 @@ export default function StepOne({
           </div>
         </section>
 
-        {/* RIGHT SIDE IMAGE */}
-        <section className="relative hidden w-[50%] p-2 md:block">
-          <div className="relative h-full min-h-125 overflow-hidden rounded-[14px]">
+        {/* RIGHT SIDE */}
+        <section className="relative hidden min-w-0 p-2 md:block md:w-[60%]">
+          <div className="relative h-full min-h-[650px] overflow-hidden rounded-[14px]">
             <Image
               src="/login-image.png"
               alt="Delivery rider"
               fill
               priority
+              sizes="60vw"
               className="object-cover"
             />
           </div>
         </section>
-
       </div>
     </main>
   );
