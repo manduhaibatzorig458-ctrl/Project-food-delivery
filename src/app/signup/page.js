@@ -16,24 +16,22 @@ export default function SignupPage() {
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md">
-        {step === 1 && (
-          <StepOne
-            formData={formData}
-            setFormData={setFormData}
-            nextStep={() => setStep(2)}
-          />
-        )}
+    <>
+      {step === 1 && (
+        <StepOne
+          formData={formData}
+          setFormData={setFormData}
+          nextStep={() => setStep(2)}
+        />
+      )}
 
-        {step === 2 && (
-          <StepTwo
-            formData={formData}
-            setFormData={setFormData}
-            previousStep={() => setStep(1)}
-          />
-        )}
-      </div>
-    </main>
+      {step === 2 && (
+        <StepTwo
+          formData={formData}
+          setFormData={setFormData}
+          previousStep={() => setStep(1)}
+        />
+      )}
+    </>
   );
 }

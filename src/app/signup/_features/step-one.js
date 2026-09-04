@@ -3,64 +3,87 @@
 import Image from "next/image";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function StepOne({
-  formData,
-  setFormData,
-  nextStep,
-}) {
-  const [errors, setErrors] = useState({
-    name: "",
-    email: "",
-    address: "",
-    phone: "",
-  });
+const stepOneSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Invalid email. Use a format like example@email.com."),
+  address: z.string().trim().min(1, "Address is required"),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Phone number is required")
+    .regex(/^[0-9+\-\s]{8,15}$/, "Invalid phone number"),
+});
+
+const emptyErrors = {
+  name: "",
+  email: "",
+  address: "",
+  phone: "",
+};
+
+const FIELDS = [
+  { id: "name", label: "Name", type: "text", placeholder: "Enter your name" },
+  {
+    id: "email",
+    label: "Email",
+    type: "email",
+    placeholder: "example@gmail.com",
+  },
+  {
+    id: "address",
+    label: "Address",
+    type: "text",
+    placeholder: "Enter your address",
+  },
+  {
+    id: "phone",
+    label: "Phone",
+    type: "tel",
+    placeholder: "Enter your phone number",
+  },
+];
+
+export default function StepOne({ formData, setFormData, nextStep }) {
+  const [errors, setErrors] = useState(emptyErrors);
 
   const handleBack = () => {
     window.history.back();
   };
 
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    setErrors({ ...errors, [field]: "" });
+  };
+
   const validate = () => {
-    const newErrors = {
-      name: "",
-      email: "",
-      address: "",
-      phone: "",
-    };
+    const result = stepOneSchema.safeParse(formData);
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+    if (result.success) {
+      setErrors(emptyErrors);
+      return true;
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email =
-        "Invalid email. Use a format like example@email.com.";
-    }
+    const newErrors = { ...emptyErrors };
 
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^[0-9+\-\s]{8,15}$/.test(formData.phone)) {
-      newErrors.phone = "Invalid phone number";
+    for (const issue of result.error.issues) {
+      const field = issue.path[0];
+      if (field in newErrors && !newErrors[field]) {
+        newErrors[field] = issue.message;
+      }
     }
 
     setErrors(newErrors);
-
-    return (
-      !newErrors.name &&
-      !newErrors.email &&
-      !newErrors.address &&
-      !newErrors.phone
-    );
+    return false;
   };
 
   const handleSubmit = (e) => {
@@ -71,25 +94,13 @@ export default function StepOne({
     }
   };
 
-  const handleChange = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
-
-    setErrors({
-      ...errors,
-      [field]: "",
-    });
-  };
-
   return (
     <main className="min-h-screen bg-[#f5f5f5] p-2 md:p-8">
       <div className="mx-auto flex w-full min-h-[calc(100vh-16px)] max-w-[1600px] overflow-hidden rounded-2xl bg-white md:min-h-[calc(100vh-64px)]">
 
         {/* LEFT SIDE */}
         <section className="flex w-full min-w-0 items-center justify-center px-8 py-10 md:w-[40%] lg:px-16">
-          <div className="w-full max-w-[420px]">
+          <div className="w-full max-w-105">
 
             {/* BACK BUTTON */}
             <button
@@ -114,93 +125,24 @@ export default function StepOne({
               onSubmit={handleSubmit}
               className="mt-6 flex w-full flex-col gap-4"
             >
-              {/* NAME */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Name</Label>
+              {FIELDS.map(({ id, label, type, placeholder }) => (
+                <div key={id} className="flex flex-col gap-2">
+                  <Label htmlFor={id}>{label}</Label>
 
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Enter your name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    handleChange("name", e.target.value)
-                  }
-                  className={errors.name ? "border-red-500" : ""}
-                />
+                  <Input
+                    id={id}
+                    type={type}
+                    placeholder={placeholder}
+                    value={formData[id]}
+                    onChange={(e) => handleChange(id, e.target.value)}
+                    className={errors[id] ? "border-red-500" : ""}
+                  />
 
-                {errors.name && (
-                  <p className="text-xs text-red-500">
-                    {errors.name}
-                  </p>
-                )}
-              </div>
-
-              {/* EMAIL */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email</Label>
-
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="example@gmail.com"
-                  value={formData.email}
-                  onChange={(e) =>
-                    handleChange("email", e.target.value)
-                  }
-                  className={errors.email ? "border-red-500" : ""}
-                />
-
-                {errors.email && (
-                  <p className="text-xs text-red-500">
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              {/* ADDRESS */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="address">Address</Label>
-
-                <Input
-                  id="address"
-                  type="text"
-                  placeholder="Enter your address"
-                  value={formData.address}
-                  onChange={(e) =>
-                    handleChange("address", e.target.value)
-                  }
-                  className={errors.address ? "border-red-500" : ""}
-                />
-
-                {errors.address && (
-                  <p className="text-xs text-red-500">
-                    {errors.address}
-                  </p>
-                )}
-              </div>
-
-              {/* PHONE */}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="phone">Phone</Label>
-
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter your phone number"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    handleChange("phone", e.target.value)
-                  }
-                  className={errors.phone ? "border-red-500" : ""}
-                />
-
-                {errors.phone && (
-                  <p className="text-xs text-red-500">
-                    {errors.phone}
-                  </p>
-                )}
-              </div>
+                  {errors[id] && (
+                    <p className="text-xs text-red-500">{errors[id]}</p>
+                  )}
+                </div>
+              ))}
 
               {/* NEXT BUTTON */}
               <Button
@@ -215,7 +157,7 @@ export default function StepOne({
 
         {/* RIGHT SIDE */}
         <section className="relative hidden min-w-0 p-2 md:block md:w-[60%]">
-          <div className="relative h-full min-h-[650px] overflow-hidden rounded-[14px]">
+          <div className="relative h-full min-h-162.5 overflow-hidden rounded-[14px]">
             <Image
               src="/login-image.png"
               alt="Delivery rider"

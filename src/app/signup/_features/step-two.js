@@ -1,62 +1,76 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export default function StepOne({
+const stepTwoSchema = z
+  .object({
+    Password: z
+      .string()
+      .min(1, "Password is required")
+      .min(8, "Password must be at least 8 characters"),
+    ConfirmPassword: z.string().min(1, "Confirm Password is required"),
+  })
+  .refine((data) => data.ConfirmPassword === data.Password, {
+    message: "Passwords do not match",
+    path: ["ConfirmPassword"],
+  });
+
+const emptyErrors = {
+  Password: "",
+  ConfirmPassword: "",
+};
+
+const PASSWORD_FIELDS = [
+  { id: "Password", label: "Password", placeholder: "Password" },
+  {
+    id: "ConfirmPassword",
+    label: "Confirm Password",
+    placeholder: "Confirm Password",
+  },
+];
+
+export default function StepTwo({
   formData,
   setFormData,
   nextStep,
+  previousStep,
 }) {
-  const [errors, setErrors] = useState({
-    Password: "",
-    ConfirmPassword: "",
-  });
-
-  // Show password state
+  const [errors, setErrors] = useState(emptyErrors);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleBack = () => {
-    window.history.back();
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    setErrors({ ...errors, [field]: "" });
   };
 
   const validate = () => {
-    const newErrors = {
-      Password: "",
-      ConfirmPassword: "",
-    };
+    const result = stepTwoSchema.safeParse(formData);
 
-    // PASSWORD VALIDATION
-    if (!formData.Password) {
-      newErrors.Password = "Password is required";
-    } else if (formData.Password.length < 8) {
-      newErrors.Password =
-        "Password must be at least 8 characters";
+    if (result.success) {
+      setErrors(emptyErrors);
+      return true;
     }
 
-    // CONFIRM PASSWORD VALIDATION
-    if (!formData.ConfirmPassword) {
-      newErrors.ConfirmPassword =
-        "Confirm Password is required";
-    } else if (
-      formData.ConfirmPassword !== formData.Password
-    ) {
-      newErrors.ConfirmPassword =
-        "Passwords do not match";
+    const newErrors = { ...emptyErrors };
+
+    for (const issue of result.error.issues) {
+      const field = issue.path[0];
+      if (field in newErrors && !newErrors[field]) {
+        newErrors[field] = issue.message;
+      }
     }
 
     setErrors(newErrors);
-
-    return (
-      !newErrors.Password &&
-      !newErrors.ConfirmPassword
-    );
+    return false;
   };
 
   const handleSubmit = (e) => {
@@ -68,41 +82,28 @@ export default function StepOne({
   };
 
   return (
-    <main className="bg-[#f5f5f5] p-2">
-      <div className="flex overflow-hidden bg-white">
+    <main className="min-h-screen bg-[#f5f5f5] p-2 md:p-8">
+      <div className="mx-auto flex w-full min-h-[calc(100vh-16px)] max-w-[1600px] overflow-hidden rounded-2xl bg-white md:min-h-[calc(100vh-64px)]">
 
         {/* LEFT SIDE */}
-        <section className="flex w-full items-center justify-center px-8 py-10 md:w-[50%]">
+        <section className="flex w-full min-w-0 items-center justify-center px-8 py-10 md:w-[40%] lg:px-16">
           <div className="w-full max-w-105">
 
             {/* BACK BUTTON */}
             <button
               type="button"
-              onClick={handleBack}
-              className="
-                mb-5
-                flex
-                h-7
-                w-7
-                items-center
-                justify-center
-                rounded-md
-                border
-                border-gray-200
-                text-gray-500
-                transition
-                hover:bg-gray-100
-              "
+              onClick={previousStep}
+              className="mb-5 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100"
             >
               <ChevronLeft size={14} />
             </button>
 
             {/* TITLE */}
-            <h1 className="text-lg font-semibold text-[#242428]">
+            <h1 className="text-lg font-semibold text-[#242428] md:text-xl">
               Create a strong password
             </h1>
 
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 md:text-sm">
               Create a strong password with letters, numbers.
             </p>
 
@@ -111,84 +112,30 @@ export default function StepOne({
               onSubmit={handleSubmit}
               className="mt-6 flex w-full flex-col gap-4"
             >
+              {PASSWORD_FIELDS.map(({ id, label, placeholder }) => (
+                <div key={id} className="flex flex-col gap-2">
+                  <Label htmlFor={id} className="text-sm text-[#242428]">
+                    {label}
+                  </Label>
 
-              {/* PASSWORD */}
-              <div className="flex flex-col gap-2">
-                <Label
-                  htmlFor="Password"
-                  className="text-sm text-[#242428]"
-                >
-                  Password
-                </Label>
+                  <Input
+                    id={id}
+                    type={showPassword ? "text" : "password"}
+                    placeholder={placeholder}
+                    value={formData[id] || ""}
+                    onChange={(e) => handleChange(id, e.target.value)}
+                    className={
+                      errors[id]
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : ""
+                    }
+                  />
 
-                <Input
-                  id="Password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={formData.Password || ""}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      Password: e.target.value,
-                    });
-
-                    setErrors({
-                      ...errors,
-                      Password: "",
-                    });
-                  }}
-                  className={
-                    errors.Password
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-
-                {errors.Password && (
-                  <p className="text-xs text-red-500">
-                    {errors.Password}
-                  </p>
-                )}
-              </div>
-
-              {/* CONFIRM PASSWORD */}
-              <div className="flex flex-col gap-2">
-                <Label
-                  htmlFor="ConfirmPassword"
-                  className="text-sm text-[#242428]"
-                >
-                  Confirm Password
-                </Label>
-
-                <Input
-                  id="ConfirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Confirm Password"
-                  value={formData.ConfirmPassword || ""}
-                  onChange={(e) => {
-                    setFormData({
-                      ...formData,
-                      ConfirmPassword: e.target.value,
-                    });
-
-                    setErrors({
-                      ...errors,
-                      ConfirmPassword: "",
-                    });
-                  }}
-                  className={
-                    errors.ConfirmPassword
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-
-                {errors.ConfirmPassword && (
-                  <p className="text-xs text-red-500">
-                    {errors.ConfirmPassword}
-                  </p>
-                )}
-              </div>
+                  {errors[id] && (
+                    <p className="text-xs text-red-500">{errors[id]}</p>
+                  )}
+                </div>
+              ))}
 
               {/* SHOW PASSWORD */}
               <div className="flex items-center gap-2">
@@ -211,45 +158,38 @@ export default function StepOne({
               {/* NEXT BUTTON */}
               <Button
                 type="submit"
-                className="
-                  mt-1
-                  h-10
-                  w-full
-                  bg-[#242428]
-                  text-white
-                  hover:bg-[#35353a]
-                "
+                className="mt-1 h-10 w-full bg-[#242428] text-white hover:bg-[#35353a]"
               >
-                Let is Go
+                Let is go
               </Button>
             </form>
 
             {/* LOGIN LINK */}
             <p className="mt-4 text-center text-xs text-gray-500">
               Already have an account?{" "}
-              <button
-                type="button"
+              <Link
+                href="/login"
                 className="ml-1 text-blue-500 hover:underline"
               >
                 Log in
-              </button>
+              </Link>
             </p>
           </div>
         </section>
 
         {/* RIGHT SIDE */}
-        <section className="relative hidden w-[50%] p-2 md:block">
-          <div className="relative h-full min-h-125 overflow-hidden rounded-[14px]">
+        <section className="relative hidden min-w-0 p-2 md:block md:w-[60%]">
+          <div className="relative h-full min-h-165.2 overflow-hidden rounded-[14px]">
             <Image
               src="/login-image.png"
               alt="Delivery rider"
               fill
               priority
+              sizes="60vw"
               className="object-cover"
             />
           </div>
         </section>
-
       </div>
     </main>
   );
