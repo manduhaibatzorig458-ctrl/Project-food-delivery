@@ -1,51 +1,41 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 
-const stepTwoSchema = z
-  .object({
-    Password: z
-      .string()
-      .min(1, "Password is required")
-      .min(8, "Password must be at least 8 characters"),
-    ConfirmPassword: z.string().min(1, "Confirm Password is required"),
-  })
-  .refine((data) => data.ConfirmPassword === data.Password, {
-    message: "Passwords do not match",
-    path: ["ConfirmPassword"],
-  });
+const stepOneSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Invalid email. Use a format like example@email.com."),
+});
 
 const emptyErrors = {
-  Password: "",
-  ConfirmPassword: "",
+  email: "",
 };
 
-const PASSWORD_FIELDS = [
-  { id: "Password", label: "Password", placeholder: "Password" },
+const FIELDS = [
   {
-    id: "ConfirmPassword",
-    label: "Confirm Password",
-    placeholder: "Confirm Password",
+    id: "email",
+    label: "Email",
+    type: "email",
+    placeholder: "example@gmail.com",
   },
 ];
 
-export default function StepTwo({
-  formData,
-  setFormData,
-  nextStep,
-  previousStep,
-}) {
+export default function StepOne({ formData, setFormData, nextStep }) {
   const [errors, setErrors] = useState(emptyErrors);
-  const [showPassword, setShowPassword] = useState(false);
+
+  const handleBack = () => {
+    window.history.back();
+  };
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -53,7 +43,7 @@ export default function StepTwo({
   };
 
   const validate = () => {
-    const result = stepTwoSchema.safeParse(formData);
+    const result = stepOneSchema.safeParse(formData);
 
     if (result.success) {
       setErrors(emptyErrors);
@@ -75,6 +65,7 @@ export default function StepTwo({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("StepOne submit, formData:", formData);
 
     if (validate()) {
       nextStep();
@@ -84,51 +75,39 @@ export default function StepTwo({
   return (
     <main className="min-h-screen bg-[#f5f5f5] p-2 md:p-8">
       <div className="mx-auto flex w-full min-h-[calc(100vh-16px)] max-w-[1600px] overflow-hidden rounded-2xl bg-white md:min-h-[calc(100vh-64px)]">
-
-        {/* LEFT SIDE */}
         <section className="flex w-full min-w-0 items-center justify-center px-8 py-10 md:w-[40%] lg:px-16">
           <div className="w-full max-w-105">
-
-            {/* BACK BUTTON */}
             <button
               type="button"
-              onClick={previousStep}
+              onClick={handleBack}
               className="mb-5 flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100"
             >
               <ChevronLeft size={14} />
             </button>
 
-            {/* TITLE */}
             <h1 className="text-lg font-semibold text-[#242428] md:text-xl">
-              Create a strong password
+              Create your account
             </h1>
 
             <p className="mt-1 text-xs text-gray-500 md:text-sm">
-              Create a strong password with letters, numbers.
+              Sign up to explore your favorite dishes.
             </p>
 
-            {/* FORM */}
             <form
               onSubmit={handleSubmit}
               className="mt-6 flex w-full flex-col gap-4"
             >
-              {PASSWORD_FIELDS.map(({ id, label, placeholder }) => (
+              {FIELDS.map(({ id, label, type, placeholder }) => (
                 <div key={id} className="flex flex-col gap-2">
-                  <Label htmlFor={id} className="text-sm text-[#242428]">
-                    {label}
-                  </Label>
+                  <Label htmlFor={id}>{label}</Label>
 
                   <Input
                     id={id}
-                    type={showPassword ? "text" : "password"}
+                    type={type}
                     placeholder={placeholder}
-                    value={formData[id] || ""}
+                    value={formData[id]}
                     onChange={(e) => handleChange(id, e.target.value)}
-                    className={
-                      errors[id]
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : ""
-                    }
+                    className={errors[id] ? "border-red-500" : ""}
                   />
 
                   {errors[id] && (
@@ -137,49 +116,18 @@ export default function StepTwo({
                 </div>
               ))}
 
-              {/* SHOW PASSWORD */}
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="show-password"
-                  checked={showPassword}
-                  onCheckedChange={(checked) =>
-                    setShowPassword(checked === true)
-                  }
-                />
-
-                <Label
-                  htmlFor="show-password"
-                  className="cursor-pointer text-xs font-normal text-gray-500"
-                >
-                  Show password
-                </Label>
-              </div>
-
-              {/* NEXT BUTTON */}
               <Button
                 type="submit"
-                className="mt-1 h-10 w-full bg-[#242428] text-white hover:bg-[#35353a]"
+                className="mt-2 h-10 w-full bg-[#242428] text-white hover:bg-[#35353a]"
               >
                 Let is go
               </Button>
             </form>
-
-            {/* LOGIN LINK */}
-            <p className="mt-4 text-center text-xs text-gray-500">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="ml-1 text-blue-500 hover:underline"
-              >
-                Log in
-              </Link>
-            </p>
           </div>
         </section>
 
-        {/* RIGHT SIDE */}
         <section className="relative hidden min-w-0 p-2 md:block md:w-[60%]">
-          <div className="relative h-full min-h-165.2 overflow-hidden rounded-[14px]">
+          <div className="relative h-full min-h-162.5 overflow-hidden rounded-[14px]">
             <Image
               src="/login-image.png"
               alt="Delivery rider"

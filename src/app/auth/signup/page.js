@@ -1,41 +1,33 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import StepOne from "./_features/step-one";
 import StepTwo from "./_features/step-two";
-import { server } from "@/app/_api/api"
-
-
-
-
-
-
-
+import { backend } from "@/app/_api/api";
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
-    address: "",
-    phone: "",
-    terms: false,
+    confirmPassword: "",
   });
 
-const processForm = async (data) => {
-  console.log(data)
-}
+  const processForm = async (data) => {
+    const { confirmPassword, ...payload } = data;
 
+    try {
+      const response = await backend.post("/auth/sign-up", payload);
+      console.log("Signup success:", response.data);
 
-
-
-
-
-  
-
-
-
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      router.push("/admin");
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
+  };
 
   return (
     <>
@@ -52,6 +44,7 @@ const processForm = async (data) => {
           formData={formData}
           setFormData={setFormData}
           previousStep={() => setStep(1)}
+          onSubmit={processForm}
         />
       )}
     </>
