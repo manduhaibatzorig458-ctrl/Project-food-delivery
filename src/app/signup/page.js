@@ -2,6 +2,14 @@
 import { useState } from "react";
 import StepOne from "./_features/step-one";
 import StepTwo from "./_features/step-two";
+import { server } from "@/app/_api/api"
+
+
+
+
+
+
+
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
@@ -14,6 +22,20 @@ export default function SignupPage() {
     phone: "",
     terms: false,
   });
+
+const processForm = async (data) => {
+  console.log(data)
+}
+
+
+
+
+
+
+  
+
+
+
 
   return (
     <>
