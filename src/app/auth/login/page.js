@@ -45,7 +45,7 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => router.push("/signup")}
+                onClick={() => router.push("/auth/signup")}
                 className="text-[#315c9b] hover:underline"
               >
                 Sign up
