@@ -8,7 +8,7 @@ export default function CategorySection({
   onEditDish,
 }) {
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm">
+    <div className="rounded-2xl bg-white p-6 shadow-sm mt-6">
       <h3 className="text-lg font-bold text-gray-900 mb-4">
         {title} ({dishes.length})
       </h3>

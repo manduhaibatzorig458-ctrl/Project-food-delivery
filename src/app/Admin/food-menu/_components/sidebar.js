@@ -22,7 +22,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-60 flex-col bg-[#F5F5F4] px-4 py-6">
+    <aside className="flex h-screen w-60 flex-col px-4 py-6">
       
       {/* Logo */}
       <div className="mb-10 flex items-center gap-3 px-2">
@@ -35,7 +35,7 @@ export default function Sidebar() {
         />
 
         <div>
-          <p className="text-[15px] font-semibold text-neutral-900">
+          <p className="text-[20px] font-semibold text-neutral-900">
             NomNom
           </p>
           <p className="text-xs text-neutral-500">

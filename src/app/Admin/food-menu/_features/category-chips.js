@@ -23,7 +23,7 @@ export default function CategoryChips({
     }`;
 
   return (
-    <section className="rounded-2xl bg-white p-6 shadow-sm">
+    <section className="rounded-2xl bg-white p-6 shadow-sm mt-10">
       <h2 className="mb-4 text-[20px] font-semibold">
         Dishes category
       </h2>
