@@ -227,16 +227,15 @@
 
 
 
-
 "use client";
 
 import { useRef, useState } from "react";
-import { X, ImageIcon, UploadCloud } from "lucide-react";
+import axios from "axios";
+import { X, ImageIcon } from "lucide-react";
 
 const API_URL = "http://localhost:1000";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function AddDishDialog(props) {
@@ -264,11 +263,6 @@ export default function AddDishDialog(props) {
       return;
     }
 
-    // console.log("SELECTED IMAGE:", file);
-    // console.log("IMAGE NAME:", file.name);
-    // console.log("IMAGE TYPE:", file.type);
-    // console.log("IMAGE SIZE:", file.size);
-
     if (!file.type.startsWith("image/")) {
       setError("Please choose an image");
       return;
@@ -276,7 +270,6 @@ export default function AddDishDialog(props) {
 
     setImage(file);
     setImagePreview(URL.createObjectURL(file));
-
     setError("");
   }
 
@@ -286,39 +279,39 @@ export default function AddDishDialog(props) {
       return "";
     }
 
+    if (!CLOUD_NAME || !UPLOAD_PRESET) {
+      throw new Error(
+        "Cloudinary is not configured (missing cloud name or upload preset)",
+      );
+    }
+
     console.log("START CLOUDINARY UPLOAD...");
     console.log("CLOUD NAME:", CLOUD_NAME);
     console.log("UPLOAD PRESET:", UPLOAD_PRESET);
 
     const formData = new FormData();
-
     formData.append("file", image);
     formData.append("upload_preset", UPLOAD_PRESET);
 
-    const response = await fetch(
-      "https://api.cloudinary.com/v1_1/" + CLOUD_NAME + "/image/upload",
-      {
-        method: "POST",
-        body: formData,
-      },
+    // axios throws automatically on non-2xx responses, so we don't need
+    // to manually check response.ok like we did with fetch.
+    const response = await axios.post(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      formData,
     );
 
-    const data = await response.json();
+    // This logs the FULL axios response object (data, status, headers,
+    // config, request, ...) — this is what you see in the screenshot.
+    console.log("CLOUDINARY RESPONSE:", response);
 
-    console.log("CLOUDINARY RESPONSE:", data);
+    const secureUrl = response.data.secure_url;
 
-    if (!response.ok) {
-      throw new Error("Image upload failed");
-    }
+    console.log("CLOUDINARY IMAGE URL:", secureUrl);
 
-    console.log("CLOUDINARY IMAGE URL:", data.secure_url);
-
-    return data.secure_url;
+    return secureUrl;
   }
 
   async function addDish() {
-    console.log();
-
     console.log("FOOD NAME:", foodName);
     console.log("FOOD PRICE:", foodPrice);
     console.log("INGREDIENTS:", ingredients);
@@ -341,7 +334,6 @@ export default function AddDishDialog(props) {
     try {
       // 1. Cloudinary
       const imageUrl = await uploadImage();
-
       console.log("FINAL IMAGE URL:", imageUrl);
 
       // 2. Backend data
@@ -356,38 +348,29 @@ export default function AddDishDialog(props) {
       console.log("DATA SENT TO BACKEND:", dishData);
 
       // 3. Backend request
-      const response = await fetch(API_URL + "/food-dish/create", {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
+      const response = await axios.post(
+        `${API_URL}/food-dish/create`,
+        dishData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
+      );
 
-        body: JSON.stringify(dishData),
-      });
+      console.log("BACKEND RESPONSE:", response);
 
-      console.log("BACKEND STATUS:", response.status);
+      const createdDish = response.data.foodDish || response.data;
+      console.log("DISH CREATED SUCCESSFULLY!", createdDish);
 
-      const data = await response.json();
-
-      console.log("BACKEND RESPONSE:", data);
-
-      if (!response.ok) {
-        setError(data.message || "Failed to add dish");
-
-        return;
-      }
-
-      console.log("DISH CREATED SUCCESSFULLY!");
-      console.log("CREATED DISH:", data.foodDish || data);
-
-      onDishAdded(data.foodDish || data);
-
+      onDishAdded(createdDish);
       onClose();
-    } catch (error) {
-      console.log("ERROR:", error);
+    } catch (err) {
+      console.log("ERROR:", err);
 
-      setError(error.message);
+      // axios errors carry the server's response (if any) on err.response
+      const serverMessage = err.response?.data?.message;
+      setError(serverMessage || err.message || "Failed to add dish");
     } finally {
       setLoading(false);
     }
@@ -504,23 +487,22 @@ export default function AddDishDialog(props) {
         {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
 
         <div className="mt-6 flex justify-end">
-          {/* <button
-            onClick={addDish}
-            disabled={loading}
-            className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
-          > */}
-           <button
+          <button
             onClick={addDish}
             disabled={loading}
             className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
           >
-            {loading ? "Uploading..." : "Uploud"}
+            {loading ? "Uploading..." : "Add Dish"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+
+
+
 
 
 

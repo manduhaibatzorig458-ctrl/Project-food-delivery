@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Sidebar from "./_components/sidebar";
@@ -24,23 +24,19 @@ export default function FoodMenuPage() {
 
   const [error, setError] = useState("");
 
-  // dish state
   const [dishes, setDishes] = useState([]);
   const [dishesLoading, setDishesLoading] = useState(false);
 
-  // add dish dialog: holds the category the dish is being added to, or null when closed
   const [addDishCategory, setAddDishCategory] = useState(null);
 
   //  Get categories
-  useEffect(() => {
+ useEffect(() => {
     const getCategories = async () => {
       try {
         setError("");
 
-        const response = await fetch(`${API_URL}/food-category/get`);
-
+        const response = await fetch (`${API_URL}/food-category/get`);
         const data = await response.json();
-
         console.log("GET CATEGORIES:", data);
 
         if (!response.ok) {
@@ -66,6 +62,7 @@ export default function FoodMenuPage() {
   }, []);
 
   // Get dishes
+
   // useEffect(() => {
   //   const getDishes = async () => {
   //     try {
@@ -277,7 +274,7 @@ export default function FoodMenuPage() {
     <div className="flex min-h-screen">
       <Sidebar />
 
-      <main className="flex-1 p-8 space-y-6">
+      <main className="flex-1 p-8 bg-gray-100 space-y-6">
         <CategoryChips
           categories={categories}
           selectedId={selectedId}
