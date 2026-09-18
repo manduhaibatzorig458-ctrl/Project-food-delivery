@@ -2,28 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import { LayoutDashboard, Truck } from "lucide-react";
 
-const NAV_ITEMS = [
-  {
-    href: "/admin/food-menu",
-    label: "Food menu",
-    icon: LayoutDashboard,
-  },
-  {
-    href: "/admin/orders",
-    label: "Orders",
-    icon: Truck,
-  },
-];
-
 export default function Sidebar() {
-  const pathname = usePathname();
-
   return (
     <aside className="flex h-screen w-60 flex-col px-4 py-6">
-      
+
       {/* Logo */}
       <div className="mb-10 flex items-center gap-5 px-2">
         <Image
@@ -38,35 +22,32 @@ export default function Sidebar() {
           <p className="text-[20px] font-semibold text-neutral-900">
             NomNom
           </p>
+
           <p className="text-xs text-neutral-500">
             Swift delivery
           </p>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = pathname.startsWith(item.href);
+      {/* Food menu */}
+      <Link
+        href="/admin/food-menu"
+        className="mb-1 flex items-center gap-2.5 rounded-xl bg-gray-100 px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-900 hover:text-white"
+      >
+        <LayoutDashboard className="h-4 w-4" />
+        Food menu
+      </Link>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium ${
-                active
-                  ? "bg-neutral-900 text-white"
-                  : "text-neutral-600 hover:bg-neutral-200/70"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Orders */}
+      <Link
+        href="/admin/orders"
+        className="flex items-center gap-2.5 rounded-xl bg-gray-100 px-3 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-900 hover:text-white"
+      >
+        <Truck className="h-4 w-4" />
+        Orders
+      </Link>
 
     </aside>
   );
 }
+
