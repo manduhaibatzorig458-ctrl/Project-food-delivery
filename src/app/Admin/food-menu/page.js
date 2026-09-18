@@ -1,109 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { backend } from "@/app/_api/api";
+
 import Sidebar from "./_components/sidebar";
 import CategoryChips from "./_features/category-chips";
 import CategorySection from "./_components/category-section";
-import AddDishDialog from "./_features/add-dish-dialog";
-
-const API_URL = "http://localhost:1000";
 
 export default function FoodMenuPage() {
+ 
   const [categories, setCategories] = useState([]);
   const [selectedId, setSelectedId] = useState("all");
-
   const [categoryName, setCategoryName] = useState("");
+  const [error, setError] = useState("");
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [categoryToDelete, setCategoryToDelete] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const [error, setError] = useState("");
-
-  const [dishes, setDishes] = useState([]);
-  const [dishesLoading, setDishesLoading] = useState(false);
-
-  const [addDishCategory, setAddDishCategory] = useState(null);
-
-  //  Get categories
- useEffect(() => {
-    const getCategories = async () => {
-      try {
-        setError("");
-
-        const response = await fetch (`${API_URL}/food-category/get`);
-        const data = await response.json();
-        console.log("GET CATEGORIES:", data);
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to get categories");
-        }
-
-        const list = data.foodCategories || data;
-
-        setCategories(
-          list.map((category) => ({
-            id: category._id,
-            label: category.categoryName,
-            count: category.count || 0,
-          }))
-        );
-      } catch (error) {
-        console.error("GET CATEGORY ERROR:", error);
-        setError(error.message);
-      }
-    };
-
-    getCategories();
+  useEffect(() => {
+    loadCategories();
   }, []);
 
-  // Get dishes
+  async function loadCategories() {
+    try {
+      const res = await backend.get("/food-category/get");
 
-  // useEffect(() => {
-  //   const getDishes = async () => {
-  //     try {
-  //       setDishesLoading(true);
-  //       setError("");
+      console.log("GET CATEGORIES:", res.data);
 
-  //       const response = await fetch(`${API_URL}/food-dish/get`);
+      // Сервэр өгөгдлийг array эсвэл { categories: [...] } гэж буцааж болно, аль альд нь ажиллуулна
+      const list = res.data.categories || res.data.foodCategories || res.data;
 
-  //       const data = await response.json();
+      const formatted = list.map((item) => ({
+        id: item._id,
+        label: item.categoryName,
+        count: item.count || 0,
+      }));
 
-  //       console.log("GET DISHES:", data);
+      setCategories(formatted);
+    } catch (err) {
+      console.error("GET CATEGORY ERROR:", err);
+      setError("Failed to load categories");
+    }
+  }
 
-  //       if (!response.ok) {
-  //         throw new Error(data.message || "Failed to get dishes");
-  //       }
-
-  //       const list = data.foodDishes || data;
-
-  //       setDishes(
-  //         list.map((dish) => ({
-  //           id: dish._id,
-  //           name: dish.dishName,
-  //           price: dish.price,
-  //           description: dish.ingredients,
-  //           image: dish.image,
-  //           categoryId: dish.categoryId,
-  //         }))
-  //       );
-  //     } catch (error) {
-  //       console.error("GET DISHES ERROR:", error);
-  //       setError(error.message);
-  //     } finally {
-  //       setDishesLoading(false);
-  //     }
-  //   };
-
-  //   getDishes();
-  // }, []);
-
-  // Create category
-  const handleAddCategory = async () => {
+// create category
+  async function handleAddCategory() {
     const name = categoryName.trim();
 
     if (!name) {
@@ -111,197 +56,106 @@ export default function FoodMenuPage() {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
-      const response = await fetch(`${API_URL}/food-category/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          categoryName: name,
-        }),
+    try {
+      const res = await backend.post("/food-category/create", {
+        categoryName: name,
       });
 
-      const data = await response.json();
+      console.log("CREATE CATEGORY:", res.data);
 
-      console.log("CREATE CATEGORY:", data);
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to create category");
-      }
-
-      const category = data.foodCategory;
+      const newCategory = res.data.category || res.data.foodCategory;
 
       setCategories((prev) => [
         ...prev,
         {
-          id: category._id,
-          label: category.categoryName,
+          id: newCategory._id,
+          label: newCategory.categoryName,
           count: 0,
         },
       ]);
 
       setCategoryName("");
       setShowAddModal(false);
-      setError("");
-    } catch (error) {
-      console.error("CREATE CATEGORY ERROR:", error);
-      setError(error.message);
+    } catch (err) {
+      console.error("CREATE CATEGORY ERROR:", err);
+      setError("Failed to add category");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  // Open delete modal
-  const handleOpenDelete = (id) => {
-    const category = categories.find((category) => category.id === id);
+  function handleOpenDelete(id) {
+    const category = categories.find((c) => c.id === id);
 
-    if (!category) return;
+    if (!category) {
+      console.error("Category not found:", id);
+      return;
+    }
 
     setCategoryToDelete(category);
     setShowDeleteModal(true);
-    setError("");
-  };
+  }
 
-  // Delete category
-  const handleDeleteCategory = async () => {
+// delete category
+  async function handleDeleteCategory() {
     if (!categoryToDelete) return;
 
     const id = categoryToDelete.id;
+    setDeleteLoading(true);
+
+    console.log("DELETE CATEGORY ID:", id);
 
     try {
-      setDeleteLoading(true);
-      setError("");
-
-      console.log("DELETE CATEGORY ID:", id);
-
-      const response = await fetch(`${API_URL}/food-category/delete/${id}`, {
-        method: "DELETE",
+      const res = await backend.delete("/food-category/delete", {
+        data: { id },
       });
 
-      const data = await response.json();
+      console.log("DELETE DATA:", res.data);
 
-      console.log("DELETE STATUS:", response.status);
-      console.log("DELETE RESPONSE:", data);
+      setCategories((prev) => prev.filter((c) => c.id !== id));
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to delete category");
-      }
-
-      // Remove from frontend
-      setCategories((prev) => prev.filter((category) => category.id !== id));
-
-      // Back to All
       setSelectedId("all");
-
-      // Close modal
-      setCategoryToDelete(null);
       setShowDeleteModal(false);
-    } catch (error) {
-      console.error("DELETE CATEGORY ERROR:", error);
-
-      alert(error.message || "Failed to delete category");
+      setCategoryToDelete(null);
+    } catch (err) {
+      console.error("DELETE CATEGORY ERROR:", err);
+      alert("Failed to delete category");
     } finally {
       setDeleteLoading(false);
     }
-  };
+  }
 
-  //  Close add category modal
-  const closeAddModal = () => {
-    if (loading) return;
-
-    setShowAddModal(false);
-    setCategoryName("");
-    setError("");
-  };
-
-  // Close delete model
-  const closeDeleteModal = () => {
-    if (deleteLoading) return;
-
-    setShowDeleteModal(false);
-    setCategoryToDelete(null);
-    setError("");
-  };
-
-  // Which categories to render as sections below the chips
-  const sectionsToRender =
+  const categoriesToShow =
     selectedId === "all"
       ? categories
-      : categories.filter((category) => category.id === selectedId);
-
-  // Dishes belonging to a given category
-  const getDishesForCategory = (categoryId) =>
-    dishes.filter((dish) => dish.categoryId === categoryId);
-
-  // Open the Add Dish dialog for a given category
-  const handleAddDish = (category) => {
-    setAddDishCategory(category);
-  };
-
-  const handleEditDish = (dish) => {
-    console.log("Edit dish:", dish);
-  };
-
-  // A new dish was created successfully in the dialog
-  const handleDishAdded = (newDish) => {
-    setDishes((prev) => [
-      ...prev,
-      {
-        id: newDish._id,
-        name: newDish.dishName,
-        price: newDish.price,
-        description: newDish.ingredients,
-        image: newDish.image,
-        categoryId: newDish.categoryId,
-      },
-    ]);
-
-    // bump the category count shown on the chip
-    setCategories((prev) =>
-      prev.map((category) =>
-        category.id === newDish.categoryId
-          ? { ...category, count: category.count + 1 }
-          : category
-      )
-    );
-  };
+      : categories.filter((c) => c.id === selectedId);
 
   return (
     <div className="flex min-h-screen">
       <Sidebar />
 
-      <main className="flex-1 p-8 bg-gray-100 space-y-6">
+      <main className="flex-1 space-y-6 bg-gray-100 p-8">
         <CategoryChips
           categories={categories}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onAddCategory={() => {
-            setShowAddModal(true);
-            setError("");
-          }}
+          onAddCategory={() => setShowAddModal(true)}
           onDeleteCategory={handleOpenDelete}
           deleteLoading={deleteLoading}
         />
 
-        {error && <p className="text-red-500">{error}</p>}
-
-        {dishesLoading ? (
-          <p className="text-neutral-500">Loading dishes...</p>
-        ) : (
-          sectionsToRender.map((category) => (
-            <CategorySection
-              key={category.id}
-              title={category.label}
-              dishes={getDishesForCategory(category.id)}
-              onAddDish={() => handleAddDish(category)}
-              onEditDish={handleEditDish}
-            />
-          ))
+        {error && (
+          <div className="rounded-xl bg-red-50 p-4 text-red-600">
+            {error}
+          </div>
         )}
+
+        {categoriesToShow.map((category) => (
+          <CategorySection key={category.id} title={category.label} />
+        ))}
 
         {/* ADD CATEGORY MODAL */}
         {showAddModal && (
@@ -309,10 +163,8 @@ export default function FoodMenuPage() {
             <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-semibold">Add category</h2>
-
                 <button
-                  onClick={closeAddModal}
-                  disabled={loading}
+                  onClick={() => setShowAddModal(false)}
                   className="text-3xl text-neutral-500"
                 >
                   ×
@@ -327,14 +179,9 @@ export default function FoodMenuPage() {
                 <input
                   type="text"
                   value={categoryName}
-                  onChange={(e) => {
-                    setCategoryName(e.target.value);
-                    setError("");
-                  }}
+                  onChange={(e) => setCategoryName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleAddCategory();
-                    }
+                    if (e.key === "Enter") handleAddCategory();
                   }}
                   disabled={loading}
                   autoFocus
@@ -346,7 +193,7 @@ export default function FoodMenuPage() {
 
               <div className="mt-8 flex justify-end gap-3">
                 <button
-                  onClick={closeAddModal}
+                  onClick={() => setShowAddModal(false)}
                   disabled={loading}
                   className="rounded-2xl border border-neutral-300 px-6 py-3 hover:bg-neutral-100"
                 >
@@ -371,10 +218,8 @@ export default function FoodMenuPage() {
             <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-semibold">Delete category</h2>
-
                 <button
-                  onClick={closeDeleteModal}
-                  disabled={deleteLoading}
+                  onClick={() => setShowDeleteModal(false)}
                   className="text-3xl text-neutral-500"
                 >
                   ×
@@ -389,7 +234,6 @@ export default function FoodMenuPage() {
                   </span>{" "}
                   category?
                 </p>
-
                 <p className="mt-3 text-neutral-500">
                   This action cannot be undone.
                 </p>
@@ -397,7 +241,7 @@ export default function FoodMenuPage() {
 
               <div className="mt-8 flex justify-end gap-3">
                 <button
-                  onClick={closeDeleteModal}
+                  onClick={() => setShowDeleteModal(false)}
                   disabled={deleteLoading}
                   className="rounded-2xl border border-neutral-300 px-6 py-3 hover:bg-neutral-100"
                 >
@@ -414,16 +258,6 @@ export default function FoodMenuPage() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* ADD DISH MODAL */}
-        {addDishCategory && (
-          <AddDishDialog
-            categoryId={addDishCategory.id}
-            categoryLabel={addDishCategory.label}
-            onClose={() => setAddDishCategory(null)}
-            onDishAdded={handleDishAdded}
-          />
         )}
       </main>
     </div>
