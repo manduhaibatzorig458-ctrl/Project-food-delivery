@@ -122,7 +122,7 @@ export default function FoodMenuPage() {
       setCategoryToDelete(null);
     } catch (err) {
       console.error("DELETE CATEGORY ERROR:", err);
-      alert("Failed to delete category");
+      
     } finally {
       setDeleteLoading(false);
     }
