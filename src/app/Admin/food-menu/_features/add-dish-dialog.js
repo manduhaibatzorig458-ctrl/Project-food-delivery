@@ -1,9 +1,14 @@
-
 "use client";
 
-import { useState } from "react";
-import { X, Upload, Image as ImageIcon } from "lucide-react";
-import { backend } from "@/app/_api/api";
+import { useRef, useState } from "react";
+import { X, ImageIcon } from "lucide-react";
+
+const API_URL = "http://localhost:1000";
+
+// Cloudinary
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function AddDishDialog({
   categoryId,
@@ -11,6 +16,7 @@ export default function AddDishDialog({
   onClose,
   onDishAdded,
 }) {
+  // Food information
   const [foodName, setFoodName] = useState("");
   const [foodPrice, setFoodPrice] = useState("");
   const [ingredients, setIngredients] = useState("");
@@ -19,283 +25,264 @@ export default function AddDishDialog({
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
+  // Loading and error
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function handleImageChange(e) {
-    const file = e.target.files?.[0];
+  // File input
+  const fileInputRef = useRef(null);
 
+  // =========================
+  // IMAGE SELECT
+  // =========================
+  const handleImageChange = (file) => {
     if (!file) return;
 
-    // File type check
+    // Зураг мөн эсэх
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+      setError("Please choose an image file");
       return;
     }
 
-    // 5MB limit
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image size must be less than 5MB");
-      return;
-    }
-
-    setError("");
-
+    // Зургийг хадгална
     setImage(file);
 
-    const previewUrl = URL.createObjectURL(file);
-    setImagePreview(previewUrl);
-  }
+    // Preview харуулна
+    const preview = URL.createObjectURL(file);
+    setImagePreview(preview);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+    setError("");
+  };
 
-    if (!foodName.trim()) {
+  // =========================
+  // UPLOAD IMAGE TO CLOUDINARY
+  // =========================
+  const uploadImage = async () => {
+    if (!image) {
+      return "";
+    }
+
+    const formData = new FormData();
+
+    formData.append("file", image);
+    formData.append("upload_preset", UPLOAD_PRESET);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+
+    const data = await response.json();
+
+    console.log("CLOUDINARY:", data);
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Image upload failed");
+    }
+
+    // Cloudinary-аас image URL авна
+    console.log("IMAGE URL:", data.secure_url);
+
+    return data.secure_url;
+  };
+
+  // =========================
+  // ADD DISH
+  // =========================
+  const handleAddDish = async () => {
+    // Food name шалгах
+    if (foodName.trim() === "") {
       setError("Food name is required");
       return;
     }
 
-    if (!foodPrice) {
+    // Food price шалгах
+    if (foodPrice.trim() === "") {
       setError("Food price is required");
       return;
     }
 
-    if (!ingredients.trim()) {
-      setError("Ingredients are required");
-      return;
-    }
-
-    if (!categoryId) {
-      setError("Category is missing");
-      return;
-    }
-
-    if (!image) {
-      setError("Food image is required");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
     try {
-      /*
-       * Одоохондоо backend-ийн /food/create endpoint
-       * JSON хүлээж байгаа гэж үзэж байна.
-       *
-       * File upload backend-ийг FormData болгож тохируулсны дараа
-       * энд image-г FormData руу оруулна.
-       */
+      setLoading(true);
+      setError("");
 
-      const formData = new FormData();
+      // =========================
+      // 1. IMAGE UPLOAD
+      // =========================
 
-      formData.append("foodName", foodName.trim());
-      formData.append("foodPrice", String(Number(foodPrice)));
-      formData.append("ingredients", ingredients.trim());
-      formData.append("categoryId", categoryId);
-      formData.append("image", image);
+      let imageUrl = "";
 
-      const res = await backend.post("/food/create", formData, {
+      if (image) {
+        imageUrl = await uploadImage();
+      }
+
+      // =========================
+      // 2. SEND DISH TO BACKEND
+      // =========================
+
+      const dishData = {
+        dishName: foodName,
+        price: foodPrice,
+        ingredients: ingredients,
+        categoryId: categoryId,
+        image: imageUrl,
+      };
+
+      console.log("DISH DATA:", dishData);
+
+      const response = await fetch(`${API_URL}/food-dish/create`, {
+        method: "POST",
+
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
         },
+
+        body: JSON.stringify(dishData),
       });
 
-      console.log("CREATE DISH:", res.data);
+      const data = await response.json();
 
-      const newDish =
-        res.data.dish ||
-        res.data.food ||
-        res.data;
+      console.log("CREATE DISH:", data);
 
-      onDishAdded?.(newDish);
+      // Backend error
+      if (!response.ok) {
+        setError(data.message || "Failed to add dish");
 
+        return;
+      }
+
+      // Dish нэмэгдсэн
+      onDishAdded?.(data.foodDish || data);
+
+      // Dialog хаана
       onClose?.();
-    } catch (err) {
-      console.error("CREATE DISH ERROR:", err);
+    } catch (error) {
+      console.log("ERROR:", error);
 
-      setError(
-        err.response?.data?.message ||
-          "Failed to add dish"
-      );
+      setError(error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-xl">
-
-        {/* Header */}
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6">
+        {/* HEADER */}
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              Add new dish
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Category:{" "}
-              <span className="font-medium text-[#E8503A]">
-                {categoryLabel}
-              </span>
-            </p>
-          </div>
+          <h2 className="text-lg font-bold">Add new Dish to {categoryLabel}</h2>
 
           <button
-            type="button"
             onClick={onClose}
             disabled={loading}
-            className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-gray-100"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="mt-6 space-y-5"
-        >
-
-          {/* Food name */}
+        {/* FOOD NAME + PRICE */}
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          {/* FOOD NAME */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-800">
-              Food name
-            </label>
+            <label className="mb-2 block text-sm">Food name</label>
 
             <input
               type="text"
               value={foodName}
-              onChange={(e) => setFoodName(e.target.value)}
-              placeholder="e.g. Cheese Pizza"
+              onChange={(e) => {
+                setFoodName(e.target.value);
+                setError("");
+              }}
+              placeholder="Type food name"
               disabled={loading}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-[#E8503A]"
+              className="w-full rounded-xl border border-gray-300 px-4 py-2.5"
             />
           </div>
 
-          {/* Price */}
+          {/* FOOD PRICE */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-800">
-              Price
-            </label>
+            <label className="mb-2 block text-sm">Food price</label>
 
             <input
-              type="number"
-              min="0"
+              type="text"
               value={foodPrice}
-              onChange={(e) => setFoodPrice(e.target.value)}
-              placeholder="e.g. 12"
+              onChange={(e) => {
+                setFoodPrice(e.target.value);
+                setError("");
+              }}
+              placeholder="Enter price..."
               disabled={loading}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-[#E8503A]"
+              className="w-full rounded-xl border border-gray-300 px-4 py-2.5"
             />
           </div>
+        </div>
 
-          {/* Ingredients */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-800">
-              Ingredients
-            </label>
+        {/* INGREDIENTS */}
+        <div className="mt-4">
+          <label className="mb-2 block text-sm">Ingredients</label>
 
-            <textarea
-              value={ingredients}
-              onChange={(e) => setIngredients(e.target.value)}
-              placeholder="e.g. Cheese, tomato sauce, chicken..."
-              rows={4}
-              disabled={loading}
-              className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none transition focus:border-[#E8503A]"
+          <textarea
+            value={ingredients}
+            onChange={(e) => setIngredients(e.target.value)}
+            placeholder="List ingredients..."
+            disabled={loading}
+            rows={3}
+            className="w-full resize-none rounded-xl border border-gray-300 px-4 py-2.5"
+          />
+        </div>
+
+        {/* IMAGE */}
+        <div className="mt-4">
+          <label className="mb-2 block text-sm">Food image</label>
+
+          <div
+            onClick={() => fileInputRef.current.click()}
+            className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-indigo-200 bg-[#F5F5FC] px-4 py-12"
+          >
+            {/* IMAGE PREVIEW */}
+            {imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="Food preview"
+                className="h-32 w-32 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white">
+                <ImageIcon size={18} />
+              </div>
+            )}
+
+            {/* FILE NAME */}
+            <p className="text-sm">{image ? image.name : "Choose a file"}</p>
+
+            {/* FILE INPUT */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleImageChange(e.target.files[0])}
             />
           </div>
+        </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-800">
-              Food image
-            </label>
+        {/* ERROR */}
+        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
 
-            <div className="flex items-center gap-4">
-
-              {/* Image Preview */}
-              <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Food preview"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-gray-400">
-                    <ImageIcon size={32} strokeWidth={1.5} />
-                  </div>
-                )}
-
-              </div>
-
-              {/* Upload */}
-              <div>
-                <label
-                  htmlFor="food-image"
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-[#E8503A] hover:text-[#E8503A]"
-                >
-                  <Upload size={18} />
-
-                  Upload image
-                </label>
-
-                <input
-                  id="food-image"
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  className="hidden"
-                  onChange={handleImageChange}
-                  disabled={loading}
-                />
-
-                <p className="mt-2 text-xs text-gray-400">
-                  JPG, JPEG or PNG · Max 5MB
-                </p>
-
-                {image && (
-                  <p className="mt-1 max-w-xs truncate text-xs text-gray-500">
-                    {image.name}
-                  </p>
-                )}
-              </div>
-
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-3">
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="rounded-xl border border-gray-300 px-6 py-3 font-medium transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-xl bg-[#E8503A] px-6 py-3 font-medium text-white transition hover:bg-[#d94330] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Adding..." : "Add dish"}
-            </button>
-
-          </div>
-
-        </form>
+        {/* ADD BUTTON */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleAddDish}
+            disabled={loading}
+            className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm text-white disabled:opacity-50"
+          >
+            {loading ? "Uploading..." : "Add Dish"}
+          </button>
+        </div>
       </div>
     </div>
   );
