@@ -221,7 +221,7 @@ export default function FoodMenuPage() {
       <main className="flex-1 space-y-6 bg-gray-100 p-8">
         {/* TOAST NOTIFICATION */}
         {toastMessage && (
-          <div className="fixed left-1/2 top-6 z-[60] flex -translate-x-1/2 items-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+          <div className="fixed left-1/2 top-6 z-60 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
             <CheckCircle2 size={18} className="text-green-400" />
             {toastMessage}
           </div>

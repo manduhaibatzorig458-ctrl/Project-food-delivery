@@ -2,14 +2,13 @@
 
 import { useRef, useState } from "react";
 import { X, ImageIcon } from "lucide-react";
+import axios from "axios";
 
 const API_URL = "http://localhost:1000";
 
-const CLOUD_NAME =
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-const UPLOAD_PRESET =
-  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function AddDishDialog({
   categoryId,
@@ -33,7 +32,6 @@ export default function AddDishDialog({
     const image = event.target.files[0];
 
     if (!image) return;
-
     console.log("Selected image:", image);
 
     if (!image.type.startsWith("image/")) {
@@ -43,50 +41,39 @@ export default function AddDishDialog({
 
     setImage(image);
 
+    // Preview үүсгэх
     const preview = URL.createObjectURL(image);
 
     setImagePreview(preview);
 
     setError("");
   };
-
-  const uploadImage = async () => {
+  s;
+  const uploadImage = () => {
     if (!image) {
-      return "";
+      return Promise.resolve("");
     }
-
-    console.log("CLOUD NAME:", CLOUD_NAME);
-    console.log("UPLOAD PRESET:", UPLOAD_PRESET);
 
     const formData = new FormData();
 
     formData.append("file", image);
     formData.append("upload_preset", UPLOAD_PRESET);
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    return axios
+      .post(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        formData,
+      )
+      .then((response) => {
+        console.log("Cloudinary response:", response.data);
 
-    const data = await response.json();
+        console.log("Image URL:", response.data.secure_url);
 
-    console.log("Cloudinary response:", data.URL);
-
-    if (!response.ok) {
-      throw new Error(
-        data.error?.message || "Image upload failed"
-      );
-    }
-
-    console.log("Image URL:", data.secure_url);
-
-    return data.secure_url;
+        return response.data.secure_url;
+      });
   };
 
-  const handleAddDish = async () => {
+  const handleAddDish = () => {
     if (foodName.trim() === "") {
       setError("Food name is required");
       return;
@@ -96,70 +83,45 @@ export default function AddDishDialog({
       setError("Food price is required");
       return;
     }
+    setLoading(true);
+    setError("");
 
-    try {
-      setLoading(true);
-      setError("");
+    uploadImage()
+      .then((imageUrl) => {
+        const dishData = {
+          dishName: foodName,
+          price: foodPrice,
+          ingredients: ingredients,
+          categoryId: categoryId,
+          image: imageUrl,
+        };
+        console.log("Dish data:", dishData);
 
-      let imageUrl = "";
+        return axios.post(`${API_URL}/food-dish/create`, dishData);
+      })
 
-      if (image) {
-        imageUrl = await uploadImage();
-      }
+      .then((response) => {
+        console.log("CREATE DISH:", response.data);
+        onDishAdded?.(response.data.foodDish || response.data);
+        onClose?.();
+      })
+      .catch((error) => {
+        console.log("ERROR:", error);
 
-      const dishData = {
-        dishName: foodName,
-        price: foodPrice,
-        ingredients: ingredients,
-        categoryId: categoryId,
-        image: imageUrl,
-      };
-
-      console.log("Dish data:", dishData);
-
-      const response = await fetch(
-        `${API_URL}/food-dish/create`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify(dishData),
-        }
-      );
-
-      const data = await response.json();
-
-      console.log("CREATE DISH:", data);
-
-      if (!response.ok) {
         setError(
-          data.message || "Failed to add dish"
+          error.response?.data?.message ||
+            error.message ||
+            "Something went wrong",
         );
-        return;
-      }
-
-      onDishAdded?.(data.foodDish || data);
-
-      onClose?.();
-
-    } catch (error) {
-      console.log("ERROR:", error);
-
-      setError(
-        error.message || "Something went wrong"
-      );
-    } finally {
-      setLoading(false);
-    }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-lg rounded-2xl bg-white p-6">
-
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">
             Add new Dish to {categoryLabel}
@@ -175,7 +137,6 @@ export default function AddDishDialog({
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4">
-
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Food name
@@ -211,7 +172,6 @@ export default function AddDishDialog({
               className="w-full rounded-xl border border-gray-300 px-4 py-2.5 outline-none"
             />
           </div>
-
         </div>
 
         <div className="mt-4">
@@ -242,7 +202,6 @@ export default function AddDishDialog({
             }}
             className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-indigo-200 bg-[#F5F5FC] px-4 py-12"
           >
-
             {imagePreview ? (
               <img
                 src={imagePreview}
@@ -266,15 +225,10 @@ export default function AddDishDialog({
               className="hidden"
               onChange={pickFile}
             />
-
           </div>
         </div>
 
-        {error && (
-          <p className="mt-3 text-sm text-red-500">
-            {error}
-          </p>
-        )}
+        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
 
         <div className="mt-6 flex justify-end">
           <button
@@ -285,9 +239,7 @@ export default function AddDishDialog({
             {loading ? "Uploading..." : "Add Dish"}
           </button>
         </div>
-
       </div>
     </div>
   );
 }
-
