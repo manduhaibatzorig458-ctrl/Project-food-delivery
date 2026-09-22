@@ -1,8 +1,14 @@
 import { Pencil } from "lucide-react";
 
-export default function DishCard({ dish, onEdit }) {
+export default function DishCard({ dish, onEdit, highlighted = false }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
+    <div
+      className={`overflow-hidden rounded-xl border bg-white transition-all duration-500 ${
+        highlighted
+          ? "border-blue-500 ring-2 ring-blue-500"
+          : "border-gray-100"
+      }`}
+    >
       <div className="relative h-32 w-full">
         <img
           src={dish.image}
