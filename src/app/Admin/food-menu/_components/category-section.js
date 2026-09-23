@@ -8,7 +8,7 @@ export default function CategorySection(props) {
       <h2 className="mb-4 text-lg font-semibold text-gray-900">
         {props.category.label}
 
-        <span className="font-normal text-gray-400">
+        <span className="font-normal text-black">
           {" "}
           ({props.dishes.length})
         </span>
@@ -20,7 +20,7 @@ export default function CategorySection(props) {
         <button
           type="button"
           onClick={() => props.onAddDish(props.category)}
-          className="flex min-h-55 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-red-300 px-4 py-10 text-center transition-colors hover:bg-red-50"
+          className="flex min-h-55 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-red-500 px-4 py-10 text-center transition-colors hover:bg-red-50"
         >
           {/* Plus icon */}
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-white">

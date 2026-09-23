@@ -1,37 +1,69 @@
-// "use client"
+"use client";
 
-// import { createContext, useContext, useEffect, useState } from "react"
-// // import { backend } from "@app/_api/api"
+import { createContext, useContext, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-// const AuthContext = createContext(null);
+const AuthContext = createContext(null);
 
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-// export const AuthProvider = ({children}) => {
-//     const [user, setUser] = useState(null);
+  const router = useRouter();
 
-//     useEffect(() => {
-//         try{
-//            const stored = localStorage.getItem("user");
-//            if (stored) setUser(JSON.parse(stored));
-//         } catch (err){
-//             localStorage.removeItem("user")
-//         } finally {
-//             setLoading(false)
-//         }
-//     }, [])
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-//     return (
-//         <AuthContext.Provider value={{user}}>
-//           {children}
-//         </AuthContext.Provider>
-//     )
-// } 
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
 
-// export const useAuth = () => {
-//     const context = useContext(AuthContext);
-//     if (!context) {
-//         throw new Error("useAuth must be within an Authprovider")
-//     };
-//     return context;
+    setIsLoading(false);
+  }, []);
 
-// }
+  const login = (userData, authToken) => {
+    setUser(userData);
+    setToken(authToken);
+
+    localStorage.setItem("token", authToken);
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    router.push("/login");
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        login,
+        logout,
+        isAuthenticated: !!token,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
+  return context;
+}
