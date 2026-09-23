@@ -7,7 +7,6 @@ import axios from "axios";
 const API_URL = "http://localhost:1000";
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function AddDishDialog({
@@ -43,9 +42,7 @@ export default function AddDishDialog({
 
     // Preview үүсгэх
     const preview = URL.createObjectURL(image);
-
     setImagePreview(preview);
-
     setError("");
   };
   s;
@@ -66,7 +63,6 @@ export default function AddDishDialog({
       )
       .then((response) => {
         console.log("Cloudinary response:", response.data);
-
         console.log("Image URL:", response.data.secure_url);
 
         return response.data.secure_url;

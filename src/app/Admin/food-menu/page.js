@@ -20,7 +20,6 @@ export default function FoodMenuPage() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const [showAddDishModal, setShowAddDishModal] = useState(false);
 
   const [categoryToDelete, setCategoryToDelete] = useState(null);
@@ -30,74 +29,97 @@ export default function FoodMenuPage() {
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Toast + highlight state for newly added dish
   const [toastMessage, setToastMessage] = useState(null);
   const [highlightDishId, setHighlightDishId] = useState(null);
 
+  // Хуудас нээгдэх үед categories болон dishes-ийг backend-ээс татна
   useEffect(() => {
     loadCategories();
     loadDishes();
   }, []);
 
-  // Auto-clear toast after 3s
+  // Toast мессежийг 3 секундийн дараа автоматаар устгана
   useEffect(() => {
     if (!toastMessage) return;
-    const timer = setTimeout(() => setToastMessage(null), 3000);
+
+    const timer = setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
-  // Auto-clear highlight after 3s
+  // Highlight-ийг 3 секундийн дараа автоматаар устгана
   useEffect(() => {
     if (!highlightDishId) return;
-    const timer = setTimeout(() => setHighlightDishId(null), 3000);
+
+    const timer = setTimeout(() => {
+      setHighlightDishId(null);
+    }, 3000);
+
     return () => clearTimeout(timer);
   }, [highlightDishId]);
 
+  // --- BACKEND-ЭЭС МЭДЭЭЛЭЛ АВАХ ФУНКЦУУД ---
+  // Категорийн жагсаалтыг backend-ээс авах
   async function loadCategories() {
     try {
-      const res = await backend.get("/food-category/get");
+      const response = await backend.get("/food-category/get");
+      console.log("GET CATEGORIES:", response.data);
 
-      console.log("GET CATEGORIES:", res.data);
+      // Backend ямар нэртэй буцаасан ч барьж авна
+      const categoryList =
+        response.data.categories ||
+        response.data.foodCategories ||
+        response.data;
 
-      const list = res.data.categories || res.data.foodCategories || res.data;
+      // Backend-ийн өгөгдлийг frontend-д хэрэгтэй хэлбэрт хөрвүүлнэ
+      const newCategories = categoryList.map((item) => {
+        return {
+          id: item._id,
+          label: item.categoryName,
+          count: item.count || 0,
+        };
+      });
 
-      const formatted = list.map((item) => ({
-        id: item._id,
-        label: item.categoryName,
-        count: item.count || 0,
-      }));
-
-      setCategories(formatted);
-    } catch (err) {
-      console.error("GET CATEGORY ERROR:", err);
-
+      setCategories(newCategories);
+    } catch (error) {
+      console.error("GET CATEGORY ERROR:", error);
       setError("Failed to load categories");
     }
   }
 
+  // Хоолны жагсаалтыг backend-ээс авах
   async function loadDishes() {
     try {
-      const res = await backend.get("/food/get");
+      const response = await backend.get("/food-dish/get");
+      console.log("GET DISHES:", response.data);
 
-      console.log("GET DISHES:", res.data);
+      // Backend "foodDishes" гэдэг нэрээр буцаадаг
+      const dishList =
+        response.data.dishes || response.data.foodDishes || response.data;
 
-      const list = res.data.dishes || res.data.foods || res.data;
+      // Backend-ийн field-ийн нэрс frontend-ийн field-ийн нэртэй адилгүй
+      // тул энд хөрвүүлж байна:
+      //   backend "category"  -> frontend "categoryId"
+      //   backend "price"     -> frontend "price"
+      const newDishes = dishList.map((item) => {
+        return {
+          id: item._id,
+          categoryId: item.category,
+          name: item.foodName,
+          price: item.price,
+          description: item.ingredients,
+          image: item.image,
+        };
+      });
 
-      const formatted = list.map((item) => ({
-        id: item._id,
-        categoryId: item.categoryId,
-        name: item.foodName,
-        price: item.foodPrice,
-        description: item.ingredients,
-        image: item.image,
-      }));
-
-      setDishes(formatted);
-    } catch (err) {
-      console.error("GET DISHES ERROR:", err);
+      setDishes(newDishes);
+    } catch (error) {
+      console.error("GET DISHES ERROR:", error);
     }
   }
-
+  // --- КАТЕГОРИ НЭМЭХ ---
   async function handleAddCategory() {
     const name = categoryName.trim();
 
@@ -110,34 +132,33 @@ export default function FoodMenuPage() {
     setError("");
 
     try {
-      const res = await backend.post("/food-category/create", {
+      const response = await backend.post("/food-category/create", {
         categoryName: name,
       });
 
-      console.log("CREATE CATEGORY:", res.data);
+      console.log("CREATE CATEGORY:", response.data);
 
-      const newCategory = res.data.category || res.data.foodCategory;
+      const newCategory = response.data.category || response.data.foodCategory;
 
-      setCategories((prev) => [
-        ...prev,
-        {
-          id: newCategory._id,
-          label: newCategory.categoryName,
-          count: 0,
-        },
-      ]);
+      const categoryToAdd = {
+        id: newCategory._id,
+        label: newCategory.categoryName,
+        count: 0,
+      };
+
+      setCategories((prevCategories) => [...prevCategories, categoryToAdd]);
 
       setCategoryName("");
       setShowAddModal(false);
-    } catch (err) {
-      console.error("CREATE CATEGORY ERROR:", err);
-
+    } catch (error) {
+      console.error("CREATE CATEGORY ERROR:", error);
       setError("Failed to add category");
     } finally {
       setLoading(false);
     }
   }
 
+  // --- КАТЕГОРИ УСТГАХ ---
   function handleOpenDelete(id) {
     const category = categories.find((c) => c.id === id);
 
@@ -152,30 +173,40 @@ export default function FoodMenuPage() {
 
   async function handleDeleteCategory() {
     if (!categoryToDelete) return;
-    const id = categoryToDelete.id;
+
+    const idToDelete = categoryToDelete.id;
 
     setDeleteLoading(true);
-    console.log("DELETE CATEGORY ID:", id);
+    console.log("DELETE CATEGORY ID:", idToDelete);
 
     try {
-      const res = await backend.delete("/food-category/delete", {
-        data: { id },
+      const response = await backend.delete("/food-category/delete", {
+        data: { id: idToDelete },
       });
-      console.log("DELETE DATA:", res.data);
 
-      setCategories((prev) => prev.filter((category) => category.id !== id));
-      setDishes((prev) => prev.filter((dish) => dish.categoryId !== id));
+      console.log("DELETE DATA:", response.data);
+
+      // Устгасан категорийг жагсаалтаас хасна
+      setCategories((prevCategories) =>
+        prevCategories.filter((category) => category.id !== idToDelete),
+      );
+
+      // Тухайн категорийн бүх хоолыг бас хасна
+      setDishes((prevDishes) =>
+        prevDishes.filter((dish) => dish.categoryId !== idToDelete),
+      );
 
       setSelectedId("all");
       setShowDeleteModal(false);
       setCategoryToDelete(null);
-    } catch (err) {
-      console.error("DELETE CATEGORY ERROR:", err);
+    } catch (error) {
+      console.error("DELETE CATEGORY ERROR:", error);
     } finally {
       setDeleteLoading(false);
     }
   }
 
+  // --- ХООЛ НЭМЭХ ---
   function handleAddDish(category) {
     console.log("ADD DISH TO:", category);
 
@@ -183,23 +214,23 @@ export default function FoodMenuPage() {
     setShowAddDishModal(true);
   }
 
+  // AddDishDialog амжилттай хоол нэмсний дараа энэ функцийг дуудна
   function handleDishAdded(newDish) {
     console.log("NEW DISH:", newDish);
 
-    const formattedDish = {
+    const dishToAdd = {
       id: newDish._id,
-      categoryId: newDish.categoryId || selectedCategory?.id,
+      categoryId: newDish.category || selectedCategory?.id,
       name: newDish.foodName,
-      price: newDish.foodPrice,
+      price: newDish.price,
       description: newDish.ingredients,
       image: newDish.image,
     };
 
-    setDishes((prev) => [...prev, formattedDish]);
+    setDishes((prevDishes) => [...prevDishes, dishToAdd]);
 
-    // Trigger toast + highlight for the newly added dish
     setToastMessage("New dish is being added to the menu");
-    setHighlightDishId(formattedDish.id);
+    setHighlightDishId(dishToAdd.id);
 
     setShowAddDishModal(false);
     setSelectedCategory(null);
@@ -219,7 +250,7 @@ export default function FoodMenuPage() {
       <Sidebar />
 
       <main className="flex-1 space-y-6 bg-gray-100 p-8">
-        {/* TOAST NOTIFICATION */}
+        {/* ШИНЭ ХООЛ НЭМЭГДСЭН ТУХАЙ МЭДЭГДЭЛ */}
         {toastMessage && (
           <div className="fixed left-1/2 top-6 z-60 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
             <CheckCircle2 size={18} className="text-green-400" />
@@ -235,11 +266,12 @@ export default function FoodMenuPage() {
           onDeleteCategory={handleOpenDelete}
           deleteLoading={deleteLoading}
         />
+
         {error && (
           <div className="rounded-xl bg-red-50 p-4 text-red-600">{error}</div>
         )}
 
-        {/* CATEGORY SECTIONS */}
+        {/* КАТЕГОРИ БҮРИЙН ХООЛНЫ ЖАГСААЛТ */}
         {categoriesToShow.map((category) => {
           const categoryDishes = dishes.filter(
             (dish) => dish.categoryId === category.id,
@@ -257,13 +289,12 @@ export default function FoodMenuPage() {
           );
         })}
 
-        {/* ADD CATEGORY MODAL */}
+        {/* КАТЕГОРИ НЭМЭХ MODAL */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-semibold">Add category</h2>
-
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="text-3xl text-neutral-500"
@@ -315,13 +346,12 @@ export default function FoodMenuPage() {
           </div>
         )}
 
-        {/* DELETE CATEGORY MODAL */}
+        {/* КАТЕГОРИ УСТГАХ MODAL */}
         {showDeleteModal && categoryToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-semibold">Delete category</h2>
-
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   className="text-3xl text-neutral-500"
@@ -365,7 +395,7 @@ export default function FoodMenuPage() {
           </div>
         )}
 
-        {/* ADD DISH MODAL */}
+        {/* ХООЛ НЭМЭХ MODAL */}
         {showAddDishModal && selectedCategory && (
           <AddDishDialog
             categoryId={selectedCategory.id}
@@ -380,4 +410,4 @@ export default function FoodMenuPage() {
       </main>
     </div>
   );
-}1
+}

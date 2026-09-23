@@ -6,7 +6,7 @@ export default function DishCard({ dish, onEdit, highlighted = false }) {
       className={`overflow-hidden rounded-xl border bg-white transition-all duration-500 ${
         highlighted
           ? "border-blue-500 ring-2 ring-blue-500"
-          : "border-gray-100"
+          : "border-gray-200"
       }`}
     >
       <div className="relative h-32 w-full">

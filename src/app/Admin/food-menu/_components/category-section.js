@@ -14,8 +14,7 @@ export default function CategorySection({
       </h3>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {/* ADD DISH */}
-
+  
         <button
           type="button"
           onClick={() => onAddDish(category)}
@@ -31,8 +30,6 @@ export default function CategorySection({
             {category.label}
           </span>
         </button>
-
-        {/* DISHES */}
 
         {dishes.map((dish) => (
           <DishCard
