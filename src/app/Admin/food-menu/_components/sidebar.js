@@ -7,7 +7,6 @@ import { LayoutDashboard, Truck } from "lucide-react";
 export default function Sidebar() {
   return (
     <aside className="flex h-screen w-60 flex-col px-4 py-6">
-
       {/* Logo */}
       <div className="mb-10 flex items-center gap-5 px-2">
         <Image
@@ -19,13 +18,9 @@ export default function Sidebar() {
         />
 
         <div>
-          <p className="text-[20px] font-semibold text-neutral-900">
-            NomNom
-          </p>
+          <p className="text-[20px] font-semibold text-neutral-900">NomNom</p>
 
-          <p className="text-xs text-neutral-500">
-            Swift delivery
-          </p>
+          <p className="text-xs text-neutral-500">Swift delivery</p>
         </div>
       </div>
 
@@ -46,8 +41,6 @@ export default function Sidebar() {
         <Truck className="h-4 w-4" />
         Orders
       </Link>
-
     </aside>
   );
 }
-

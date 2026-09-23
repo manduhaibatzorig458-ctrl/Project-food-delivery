@@ -9,12 +9,7 @@ const API_URL = "http://localhost:1000";
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-export default function AddDishDialog({
-  categoryId,
-  categoryLabel,
-  onClose,
-  onDishAdded,
-}) {
+export default function AddDishDialog(props) {
   const [foodName, setFoodName] = useState("");
   const [foodPrice, setFoodPrice] = useState("");
   const [ingredients, setIngredients] = useState("");
@@ -27,25 +22,27 @@ export default function AddDishDialog({
 
   const fileInputRef = useRef(null);
 
+  // Choose image
   const pickFile = (event) => {
-    const image = event.target.files[0];
+    const file = event.target.files[0];
 
-    if (!image) return;
-    console.log("Selected image:", image);
+    if (!file) {
+      return;
+    }
 
-    if (!image.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/")) {
       setError("Please choose an image file");
       return;
     }
 
-    setImage(image);
+    setImage(file);
 
-    // Preview үүсгэх
-    const preview = URL.createObjectURL(image);
+    const preview = URL.createObjectURL(file);
     setImagePreview(preview);
     setError("");
   };
-  s;
+
+  // Upload image to Cloudinary
   const uploadImage = () => {
     if (!image) {
       return Promise.resolve("");
@@ -62,13 +59,11 @@ export default function AddDishDialog({
         formData,
       )
       .then((response) => {
-        console.log("Cloudinary response:", response.data);
-        console.log("Image URL:", response.data.secure_url);
-
         return response.data.secure_url;
       });
   };
 
+  // Add dish
   const handleAddDish = () => {
     if (foodName.trim() === "") {
       setError("Food name is required");
@@ -79,6 +74,7 @@ export default function AddDishDialog({
       setError("Food price is required");
       return;
     }
+
     setLoading(true);
     setError("");
 
@@ -88,28 +84,27 @@ export default function AddDishDialog({
           dishName: foodName,
           price: foodPrice,
           ingredients: ingredients,
-          categoryId: categoryId,
+          categoryId: props.categoryId,
           image: imageUrl,
         };
-        console.log("Dish data:", dishData);
 
         return axios.post(`${API_URL}/food-dish/create`, dishData);
       })
 
       .then((response) => {
-        console.log("CREATE DISH:", response.data);
-        onDishAdded?.(response.data.foodDish || response.data);
-        onClose?.();
-      })
-      .catch((error) => {
-        console.log("ERROR:", error);
+        console.log("Dish created:", response.data);
 
-        setError(
-          error.response?.data?.message ||
-            error.message ||
-            "Something went wrong",
-        );
+        props.onDishAdded?.(response.data.foodDish || response.data);
+
+        props.onClose?.();
       })
+
+      .catch((error) => {
+        console.log("Error:", error);
+
+        setError(error.response?.data?.message || "Something went wrong");
+      })
+
       .finally(() => {
         setLoading(false);
       });
@@ -118,13 +113,14 @@ export default function AddDishDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-lg rounded-2xl bg-white p-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">
-            Add new Dish to {categoryLabel}
+            Add new Dish to {props.categoryLabel}
           </h2>
 
           <button
-            onClick={onClose}
+            onClick={props.onClose}
             disabled={loading}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500"
           >
@@ -132,6 +128,7 @@ export default function AddDishDialog({
           </button>
         </div>
 
+        {/* Name and price */}
         <div className="mt-6 grid grid-cols-2 gap-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -170,6 +167,7 @@ export default function AddDishDialog({
           </div>
         </div>
 
+        {/* Ingredients */}
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-gray-700">
             Ingredients
@@ -187,15 +185,14 @@ export default function AddDishDialog({
           />
         </div>
 
+        {/* Image */}
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-gray-700">
             Food image
           </label>
 
           <div
-            onClick={() => {
-              fileInputRef.current?.click();
-            }}
+            onClick={() => fileInputRef.current.click()}
             className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-indigo-200 bg-[#F5F5FC] px-4 py-12"
           >
             {imagePreview ? (
@@ -224,8 +221,10 @@ export default function AddDishDialog({
           </div>
         </div>
 
+        {/* Error */}
         {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
 
+        {/* Add button */}
         <div className="mt-6 flex justify-end">
           <button
             onClick={handleAddDish}

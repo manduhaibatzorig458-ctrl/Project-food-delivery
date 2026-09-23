@@ -1,43 +1,46 @@
 import { Pencil } from "lucide-react";
 
-export default function DishCard({ dish, onEdit, highlighted = false }) {
+export default function DishCard(props) {
+  if (!props.dish) {
+    return null;
+  }
+
   return (
-    <div
-      className={`overflow-hidden rounded-xl border bg-white transition-all duration-500 ${
-        highlighted
-          ? "border-blue-500 ring-2 ring-blue-500"
-          : "border-gray-200"
-      }`}
-    >
-      <div className="relative h-32 w-full">
+    <div className="rounded-xl border border-gray-200 bg-white p-2">
+      {/* Image */}
+      <div className="relative h-32 w-full overflow-hidden rounded-lg">
         <img
-          src={dish.image}
-          alt={dish.name}
+          src={props.dish.image}
+          alt={props.dish.name}
           className="h-full w-full object-cover"
         />
 
+        {/* Edit button */}
         <button
           type="button"
-          onClick={() => onEdit?.(dish)}
-          className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm hover:bg-gray-50"
+          onClick={() => props.onEdit(props.dish)}
+          aria-label="Edit dish"
+          className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-transform hover:scale-105"
         >
-          <Pencil size={14} className="text-red-400" />
+          <Pencil size={14} className="text-red-500" />
         </button>
       </div>
 
-      <div className="p-3">
+      {/* Dish information */}
+      <div className="px-1 pb-0.5 pt-2">
+        {/* Name and price */}
         <div className="flex items-start justify-between gap-2">
           <h4 className="text-sm font-semibold leading-snug text-red-500">
-            {dish.name}
+            {props.dish.name}
           </h4>
 
           <span className="shrink-0 text-sm font-semibold text-gray-900">
-            ${dish.price}
+            ${props.dish.price}
           </span>
         </div>
 
-        <p className="mt-1 text-xs leading-relaxed text-gray-500">
-          {dish.description}
+        <p className="mt-1 text-xs leading-relaxed text-gray-600">
+          {props.dish.description}
         </p>
       </div>
     </div>

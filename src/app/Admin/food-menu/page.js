@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+
 import { backend } from "@/app/_api/api";
 
 import Sidebar from "./_components/sidebar.js";
 import CategoryChips from "./_features/category-chips.js";
 import CategorySection from "./_components/category-section.js";
 import AddDishDialog from "./_features/add-dish-dialog.js";
+import DishInfoDialog from "./_features/dish-info-dialog.js";
 
 export default function FoodMenuPage() {
   const [categories, setCategories] = useState([]);
@@ -16,40 +18,117 @@ export default function FoodMenuPage() {
   const [selectedId, setSelectedId] = useState("all");
 
   const [categoryName, setCategoryName] = useState("");
-  const [error, setError] = useState("");
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showAddDishModal, setShowAddDishModal] = useState(false);
-
-  const [categoryToDelete, setCategoryToDelete] = useState(null);
 
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showAddDishModal, setShowAddDishModal] = useState(false);
+
+  const [dishToEdit, setDishToEdit] = useState(null);
+  const [showDishInfoModal, setShowDishInfoModal] = useState(false);
+
+  const [dishToDelete, setDishToDelete] = useState(null);
+  const [showDeleteDishModal, setShowDeleteDishModal] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteDishLoading, setDeleteDishLoading] = useState(false);
 
-  const [toastMessage, setToastMessage] = useState(null);
+  const [error, setError] = useState("");
+
+  const [toastMessage, setToastMessage] = useState("");
   const [highlightDishId, setHighlightDishId] = useState(null);
 
-  // Хуудас нээгдэх үед categories болон dishes-ийг backend-ээс татна
+  // ==========================================
+  // GET CATEGORIES
+  // ==========================================
+
+  async function loadCategories() {
+    try {
+      const response = await backend.get("/food-category/get");
+
+      console.log("GET CATEGORY:", response.data);
+
+      const categoryList =
+        response.data.categories ||
+        response.data.foodCategories ||
+        response.data;
+
+      const newCategories = categoryList.map((item) => ({
+        id: item._id,
+        label: item.categoryName,
+        count: item.count || 0,
+      }));
+
+      setCategories(newCategories);
+    } catch (error) {
+      console.log("GET CATEGORY ERROR:", error);
+      console.log("GET CATEGORY ERROR RESPONSE:", error.response?.data);
+
+      setError("Failed to load categories");
+    }
+  }
+
+  // ==========================================
+  // GET DISHES
+  // ==========================================
+
+  async function loadDishes() {
+    try {
+      const response = await backend.get("/food-dish/get");
+
+      console.log("GET DISH:", response.data);
+
+      const dishList =
+        response.data.dishes || response.data.foodDishes || response.data;
+
+      const newDishes = dishList.map((item) => ({
+        id: item._id,
+        categoryId: item.category,
+        name: item.foodName,
+        price: item.price,
+        description: item.ingredients,
+        image: item.image,
+      }));
+
+      setDishes(newDishes);
+    } catch (error) {
+      console.log("GET DISH ERROR:", error);
+      console.log("GET DISH ERROR RESPONSE:", error.response?.data);
+
+      setError("Failed to load dishes");
+    }
+  }
+
+  // ==========================================
+  // PAGE LOAD
+  // ==========================================
+
   useEffect(() => {
     loadCategories();
     loadDishes();
   }, []);
 
-  // Toast мессежийг 3 секундийн дараа автоматаар устгана
+  // ==========================================
+  // TOAST
+  // ==========================================
+
   useEffect(() => {
     if (!toastMessage) return;
 
     const timer = setTimeout(() => {
-      setToastMessage(null);
+      setToastMessage("");
     }, 3000);
 
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
-  // Highlight-ийг 3 секундийн дараа автоматаар устгана
+  // ==========================================
+  // HIGHLIGHT
+  // ==========================================
+
   useEffect(() => {
     if (!highlightDishId) return;
 
@@ -60,66 +139,10 @@ export default function FoodMenuPage() {
     return () => clearTimeout(timer);
   }, [highlightDishId]);
 
-  // --- BACKEND-ЭЭС МЭДЭЭЛЭЛ АВАХ ФУНКЦУУД ---
-  // Категорийн жагсаалтыг backend-ээс авах
-  async function loadCategories() {
-    try {
-      const response = await backend.get("/food-category/get");
-      console.log("GET CATEGORIES:", response.data);
+  // ==========================================
+  // ADD CATEGORY
+  // ==========================================
 
-      // Backend ямар нэртэй буцаасан ч барьж авна
-      const categoryList =
-        response.data.categories ||
-        response.data.foodCategories ||
-        response.data;
-
-      // Backend-ийн өгөгдлийг frontend-д хэрэгтэй хэлбэрт хөрвүүлнэ
-      const newCategories = categoryList.map((item) => {
-        return {
-          id: item._id,
-          label: item.categoryName,
-          count: item.count || 0,
-        };
-      });
-
-      setCategories(newCategories);
-    } catch (error) {
-      console.error("GET CATEGORY ERROR:", error);
-      setError("Failed to load categories");
-    }
-  }
-
-  // Хоолны жагсаалтыг backend-ээс авах
-  async function loadDishes() {
-    try {
-      const response = await backend.get("/food-dish/get");
-      console.log("GET DISHES:", response.data);
-
-      // Backend "foodDishes" гэдэг нэрээр буцаадаг
-      const dishList =
-        response.data.dishes || response.data.foodDishes || response.data;
-
-      // Backend-ийн field-ийн нэрс frontend-ийн field-ийн нэртэй адилгүй
-      // тул энд хөрвүүлж байна:
-      //   backend "category"  -> frontend "categoryId"
-      //   backend "price"     -> frontend "price"
-      const newDishes = dishList.map((item) => {
-        return {
-          id: item._id,
-          categoryId: item.category,
-          name: item.foodName,
-          price: item.price,
-          description: item.ingredients,
-          image: item.image,
-        };
-      });
-
-      setDishes(newDishes);
-    } catch (error) {
-      console.error("GET DISHES ERROR:", error);
-    }
-  }
-  // --- КАТЕГОРИ НЭМЭХ ---
   async function handleAddCategory() {
     const name = categoryName.trim();
 
@@ -138,32 +161,41 @@ export default function FoodMenuPage() {
 
       console.log("CREATE CATEGORY:", response.data);
 
-      const newCategory = response.data.category || response.data.foodCategory;
+      const newCategory =
+        response.data.category || response.data.foodCategory || response.data;
 
-      const categoryToAdd = {
+      const category = {
         id: newCategory._id,
         label: newCategory.categoryName,
         count: 0,
       };
 
-      setCategories((prevCategories) => [...prevCategories, categoryToAdd]);
+      setCategories([...categories, category]);
 
       setCategoryName("");
       setShowAddModal(false);
     } catch (error) {
-      console.error("CREATE CATEGORY ERROR:", error);
+      console.log("CREATE CATEGORY ERROR:", error);
+
+      console.log("CREATE CATEGORY ERROR RESPONSE:", error.response?.data);
+
       setError("Failed to add category");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   }
 
-  // --- КАТЕГОРИ УСТГАХ ---
+  // ==========================================
+  // OPEN DELETE CATEGORY
+  // ==========================================
+
   function handleOpenDelete(id) {
-    const category = categories.find((c) => c.id === id);
+    console.log("OPEN DELETE CATEGORY:", id);
+
+    const category = categories.find((item) => item.id === id);
 
     if (!category) {
-      console.error("Category not found:", id);
+      console.log("CATEGORY NOT FOUND:", id);
       return;
     }
 
@@ -171,42 +203,59 @@ export default function FoodMenuPage() {
     setShowDeleteModal(true);
   }
 
-  async function handleDeleteCategory() {
-    if (!categoryToDelete) return;
+  // ==========================================
+  // DELETE CATEGORY
+  // ==========================================
 
-    const idToDelete = categoryToDelete.id;
+  async function handleDeleteCategory() {
+    if (!categoryToDelete) {
+      console.log("NO CATEGORY TO DELETE");
+      return;
+    }
+
+    console.log("DELETE CATEGORY ID:", categoryToDelete.id);
 
     setDeleteLoading(true);
-    console.log("DELETE CATEGORY ID:", idToDelete);
+    setError("");
 
     try {
       const response = await backend.delete("/food-category/delete", {
-        data: { id: idToDelete },
+        data: {
+          id: categoryToDelete.id,
+        },
       });
 
-      console.log("DELETE DATA:", response.data);
+      console.log("DELETE CATEGORY RESPONSE:", response.data);
 
-      // Устгасан категорийг жагсаалтаас хасна
-      setCategories((prevCategories) =>
-        prevCategories.filter((category) => category.id !== idToDelete),
+      setCategories(
+        categories.filter((category) => category.id !== categoryToDelete.id),
       );
 
-      // Тухайн категорийн бүх хоолыг бас хасна
-      setDishes((prevDishes) =>
-        prevDishes.filter((dish) => dish.categoryId !== idToDelete),
+      setDishes(
+        dishes.filter((dish) => dish.categoryId !== categoryToDelete.id),
       );
 
       setSelectedId("all");
+
       setShowDeleteModal(false);
       setCategoryToDelete(null);
+
+      setToastMessage("Category successfully deleted");
     } catch (error) {
-      console.error("DELETE CATEGORY ERROR:", error);
-    } finally {
-      setDeleteLoading(false);
+      console.log("DELETE CATEGORY ERROR:", error);
+
+      console.log("DELETE CATEGORY ERROR RESPONSE:", error.response?.data);
+
+      setError("Failed to delete category");
     }
+
+    setDeleteLoading(false);
   }
 
-  // --- ХООЛ НЭМЭХ ---
+  // ==========================================
+  // OPEN ADD DISH
+  // ==========================================
+
   function handleAddDish(category) {
     console.log("ADD DISH TO:", category);
 
@@ -214,11 +263,14 @@ export default function FoodMenuPage() {
     setShowAddDishModal(true);
   }
 
-  // AddDishDialog амжилттай хоол нэмсний дараа энэ функцийг дуудна
+  // ==========================================
+  // DISH ADDED
+  // ==========================================
+
   function handleDishAdded(newDish) {
     console.log("NEW DISH:", newDish);
 
-    const dishToAdd = {
+    const dish = {
       id: newDish._id,
       categoryId: newDish.category || selectedCategory?.id,
       name: newDish.foodName,
@@ -227,39 +279,171 @@ export default function FoodMenuPage() {
       image: newDish.image,
     };
 
-    setDishes((prevDishes) => [...prevDishes, dishToAdd]);
+    setDishes([...dishes, dish]);
 
     setToastMessage("New dish is being added to the menu");
-    setHighlightDishId(dishToAdd.id);
+
+    setHighlightDishId(dish.id);
 
     setShowAddDishModal(false);
     setSelectedCategory(null);
   }
 
+  // ==========================================
+  // OPEN EDIT DISH
+  // ==========================================
+
   function handleEditDish(dish) {
     console.log("EDIT DISH:", dish);
+
+    setDishToEdit(dish);
+    setShowDishInfoModal(true);
   }
 
-  const categoriesToShow =
-    selectedId === "all"
-      ? categories
-      : categories.filter((category) => category.id === selectedId);
+  // ==========================================
+  // DISH UPDATED
+  // ==========================================
+
+  function handleDishUpdated(updatedDish) {
+    console.log("UPDATED DISH:", updatedDish);
+
+    const newDishes = dishes.map((dish) => {
+      if (dish.id === updatedDish.id) {
+        return updatedDish;
+      }
+
+      return dish;
+    });
+
+    setDishes(newDishes);
+
+    setToastMessage("Dish updated successfully");
+
+    setHighlightDishId(updatedDish.id);
+
+    setShowDishInfoModal(false);
+    setDishToEdit(null);
+  }
+
+  // ==========================================
+  // OPEN DELETE DISH
+  // ==========================================
+
+  function handleRequestDeleteDish(dish) {
+    console.log("OPEN DELETE DISH:", dish);
+
+    setShowDishInfoModal(false);
+    setDishToEdit(null);
+
+    setDishToDelete(dish);
+    setShowDeleteDishModal(true);
+  }
+
+  // ==========================================
+  // DELETE DISH
+  // ==========================================
+
+  async function handleDeleteDish() {
+    if (!dishToDelete) {
+      console.log("NO DISH TO DELETE");
+      return;
+    }
+
+    console.log("DELETE DISH ID:", dishToDelete.id);
+
+    setDeleteDishLoading(true);
+    setError("");
+
+    try {
+      const response = await backend.delete(`/food-dish/${dishToDelete.id}`);
+
+      console.log("DELETE DISH RESPONSE:", response.data);
+
+      setDishes(dishes.filter((dish) => dish.id !== dishToDelete.id));
+
+      setToastMessage("Dish successfully deleted");
+
+      setShowDeleteDishModal(false);
+      setDishToDelete(null);
+    } catch (error) {
+      console.log("DELETE DISH ERROR:", error);
+
+      console.log("DELETE DISH ERROR RESPONSE:", error.response?.data);
+
+      setError("Failed to delete dish");
+    }
+
+    setDeleteDishLoading(false);
+  }
+
+  // ==========================================
+  // CATEGORY COUNT
+  // ==========================================
+
+  const categoriesWithCount = useMemo(() => {
+    return categories.map((category) => {
+      const count = dishes.filter(
+        (dish) => dish.categoryId === category.id,
+      ).length;
+
+      return {
+        ...category,
+        count,
+      };
+    });
+  }, [categories, dishes]);
+
+  // ==========================================
+  // CATEGORY TO SHOW
+  // ==========================================
+
+  let categoriesToShow = categoriesWithCount;
+
+  if (selectedId !== "all") {
+    categoriesToShow = categoriesWithCount.filter(
+      (category) => category.id === selectedId,
+    );
+  }
+
+  // ==========================================
+  // PAGE
+  // ==========================================
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      <main className="flex-1 space-y-6 bg-gray-100 p-8">
-        {/* ШИНЭ ХООЛ НЭМЭГДСЭН ТУХАЙ МЭДЭГДЭЛ */}
+      <main className="flex-1 p-6">
+        {/* TOAST */}
+
         {toastMessage && (
-          <div className="fixed left-1/2 top-6 z-60 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-            <CheckCircle2 size={18} className="text-green-400" />
-            {toastMessage}
+          <div className="fixed right-6 top-6 z-50 flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-lg">
+            <CheckCircle2 size={20} className="text-green-500" />
+
+            <span className="text-sm font-medium">{toastMessage}</span>
           </div>
         )}
 
+        {/* ERROR */}
+
+        {error && (
+          <div className="mb-4 flex items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-sm text-red-500">
+            <span>{error}</span>
+
+            <button
+              type="button"
+              onClick={() => setError("")}
+              className="font-semibold"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* CATEGORY CHIPS */}
+
         <CategoryChips
-          categories={categories}
+          categories={categoriesWithCount}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onAddCategory={() => setShowAddModal(true)}
@@ -267,147 +451,178 @@ export default function FoodMenuPage() {
           deleteLoading={deleteLoading}
         />
 
-        {error && (
-          <div className="rounded-xl bg-red-50 p-4 text-red-600">{error}</div>
-        )}
+        {/* CATEGORY SECTIONS */}
 
-        {/* КАТЕГОРИ БҮРИЙН ХООЛНЫ ЖАГСААЛТ */}
-        {categoriesToShow.map((category) => {
-          const categoryDishes = dishes.filter(
-            (dish) => dish.categoryId === category.id,
-          );
+        <div className="mt-6 space-y-6">
+          {categoriesToShow.map((category) => {
+            const categoryDishes = dishes.filter(
+              (dish) => dish.categoryId === category.id,
+            );
 
-          return (
-            <CategorySection
-              key={category.id}
-              category={category}
-              dishes={categoryDishes}
-              onAddDish={handleAddDish}
-              onEditDish={handleEditDish}
-              highlightDishId={highlightDishId}
-            />
-          );
-        })}
-
-        {/* КАТЕГОРИ НЭМЭХ MODAL */}
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-xl">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-semibold">Add category</h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="text-3xl text-neutral-500"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="mt-8">
-                <label className="mb-3 block text-xl font-medium">
-                  Category name
-                </label>
-
-                <input
-                  type="text"
-                  value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleAddCategory();
-                    }
-                  }}
-                  disabled={loading}
-                  autoFocus
-                  className="w-full rounded-2xl border-2 border-neutral-300 px-5 py-4 text-xl outline-none focus:border-[#E8503A]"
-                />
-
-                {error && <p className="mt-3 text-red-500">{error}</p>}
-              </div>
-
-              <div className="mt-8 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  disabled={loading}
-                  className="rounded-2xl border border-neutral-300 px-6 py-3 hover:bg-neutral-100"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleAddCategory}
-                  disabled={loading}
-                  className="rounded-2xl bg-[#E8503A] px-6 py-3 text-white hover:bg-[#d94330]"
-                >
-                  {loading ? "Adding..." : "Add category"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* КАТЕГОРИ УСТГАХ MODAL */}
-        {showDeleteModal && categoryToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-xl">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-semibold">Delete category</h2>
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="text-3xl text-neutral-500"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="mt-8">
-                <p className="text-xl text-neutral-700">
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-black">
-                    `{categoryToDelete.label}`
-                  </span>{" "}
-                  category?
-                </p>
-
-                <p className="mt-3 text-neutral-500">
-                  This action cannot be undone.
-                </p>
-              </div>
-
-              <div className="mt-8 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  disabled={deleteLoading}
-                  className="rounded-2xl border border-neutral-300 px-6 py-3 hover:bg-neutral-100"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleDeleteCategory}
-                  disabled={deleteLoading}
-                  className="rounded-2xl bg-[#E8503A] px-6 py-3 text-white hover:bg-[#d94330]"
-                >
-                  {deleteLoading ? "Deleting..." : "Delete category"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ХООЛ НЭМЭХ MODAL */}
-        {showAddDishModal && selectedCategory && (
-          <AddDishDialog
-            categoryId={selectedCategory.id}
-            categoryLabel={selectedCategory.label}
-            onClose={() => {
-              setShowAddDishModal(false);
-              setSelectedCategory(null);
-            }}
-            onDishAdded={handleDishAdded}
-          />
-        )}
+            return (
+              <CategorySection
+                key={category.id}
+                category={category}
+                dishes={categoryDishes}
+                onAddDish={handleAddDish}
+                onEditDish={handleEditDish}
+                highlightDishId={highlightDishId}
+              />
+            );
+          })}
+        </div>
       </main>
+
+      {/* ========================================
+          ADD CATEGORY
+      ======================================== */}
+
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h2 className="mb-4 text-xl font-semibold">Add Category</h2>
+
+            <input
+              type="text"
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="Category name"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none"
+            />
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setCategoryName("");
+                }}
+                className="rounded-lg px-4 py-2 text-gray-600"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                disabled={loading}
+                className="rounded-lg bg-red-500 px-5 py-2 text-white"
+              >
+                {loading ? "Adding..." : "Add"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================
+          DELETE CATEGORY
+      ======================================== */}
+
+      {showDeleteModal && categoryToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h2 className="text-xl font-semibold">Delete Category</h2>
+
+            <p className="mt-3 text-gray-600">
+              Are you sure you want to delete <b>{categoryToDelete.label}</b>?
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setCategoryToDelete(null);
+                }}
+                className="rounded-lg px-4 py-2 text-gray-600"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteCategory}
+                disabled={deleteLoading}
+                className="rounded-lg bg-red-500 px-5 py-2 text-white"
+              >
+                {deleteLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================
+          ADD DISH
+      ======================================== */}
+
+      {showAddDishModal && selectedCategory && (
+        <AddDishDialog
+          categoryId={selectedCategory.id}
+          categoryLabel={selectedCategory.label}
+          onClose={() => {
+            setShowAddDishModal(false);
+            setSelectedCategory(null);
+          }}
+          onDishAdded={handleDishAdded}
+        />
+      )}
+
+      {/* ========================================
+          EDIT DISH
+      ======================================== */}
+
+      {showDishInfoModal && dishToEdit && (
+        <DishInfoDialog
+          dish={dishToEdit}
+          categories={categories}
+          onClose={() => {
+            setShowDishInfoModal(false);
+            setDishToEdit(null);
+          }}
+          onUpdated={handleDishUpdated}
+          onDeleteRequest={handleRequestDeleteDish}
+        />
+      )}
+
+      {/* ========================================
+          DELETE DISH
+      ======================================== */}
+
+      {showDeleteDishModal && dishToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h2 className="text-xl font-semibold">Delete Dish</h2>
+
+            <p className="mt-3 text-gray-600">
+              Are you sure you want to delete <b>{dishToDelete.name}</b>?
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteDishModal(false);
+                  setDishToDelete(null);
+                }}
+                className="rounded-lg px-4 py-2 text-gray-600"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteDish}
+                disabled={deleteDishLoading}
+                className="rounded-lg bg-red-500 px-5 py-2 text-white"
+              >
+                {deleteDishLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
