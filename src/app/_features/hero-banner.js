@@ -1,54 +1,95 @@
-// export default function HeroBanner({
-//   eyebrow = "Steak society",
-//   title = "Today's",
-//   highlight = "Offer!",
-// }) {
-//   return (
-//     <section className="relative overflow-hidden bg-[#f3ede3] min-h-[220px]">
-//       <div
-//         className="absolute inset-0 flex items-center whitespace-nowrap font-serif font-bold text-[44px] text-black/[0.08] overflow-hidden"
-//         aria-hidden="true"
-//       >
-//         {Array.from({ length: 6 }).map((_, i) => (
-//           <span key={i}>Say cheese · Fresh fast delivered ·&nbsp;</span>
-//         ))}
-//       </div>
+"use client";
 
-//       <div className="relative flex flex-col md:flex-row items-center gap-8 max-w-6xl mx-auto px-6 sm:px-10 py-9 min-h-[220px] bg-[#0d0d0d] rounded-b-[32px] md:rounded-l-none md:rounded-r-full">
-//         <div className="flex flex-col gap-4 flex-shrink-0 items-center md:items-start text-center md:text-left">
-//           <h1 className="m-0 font-serif font-extrabold text-[40px] sm:text-[56px] md:text-[64px] leading-[0.95] text-white">
-//             {title}
-//           </h1>
-//           <span className="inline-block w-fit px-4.5 py-2 rounded-full bg-[#e8543d] text-white text-[13px] font-semibold uppercase tracking-wide">
-//             {eyebrow}
-//           </span>
-//         </div>
+import Image from "next/image";
 
-//         <div className="relative flex items-end justify-center flex-1 min-w-0 order-3 md:order-none">
-//           <div
-//             className="grid place-items-center w-[220px] h-[220px] rounded-full text-[88px] shadow-[0_20px_40px_rgba(0,0,0,0.35)]"
-//             style={{ background: "radial-gradient(circle at 35% 30%, #d8cfc0, #b8ad98)" }}
-//             role="img"
-//             aria-label="Featured steak plate"
-//           >
-//             🥩
-//           </div>
-//           <div
-//             className="grid place-items-center w-[100px] h-[100px] rounded-full bg-white text-4xl absolute right-[8%] -top-2.5 shadow-[0_10px_24px_rgba(0,0,0,0.3)]"
-//             role="img"
-//             aria-label="Key lime pie"
-//           >
-//             🥧
-//           </div>
-//           <span className="absolute right-[22%] top-[22%] text-3xl text-[#e8543d] font-extrabold" aria-hidden="true">
-//             +
-//           </span>
-//         </div>
+export default function HeroBanner() {
+  return (
+    <section className="relative w-full overflow-hidden bg-[#f4f2ef] py-30">
+      
+      {/* Main banner */}
+      <div className="relative mx-auto h-82.5 w-full max-w-362.5">
+        {/* Red shadow / border */}
+        <div className="absolute -bottom-5  left-0 h-10 w-[91%] rounded-bl-[60px] rounded-br-[1100px] bg-[#ff5145]" />
 
-//         <h2 className="m-0 font-serif font-extrabold text-[36px] sm:text-[48px] md:text-[56px] text-white flex-shrink-0">
-//           {highlight}
-//         </h2>
-//       </div>
-//     </section>
-//   );
-// }
+        {/* Black shape */}
+        <div className="absolute inset-0 z-10 overflow-visible rounded-bl-[70px] rounded-br-[170px] rounded-tr-[170px] bg-[#19191b]">
+          {/* TODAY'S */}
+          <div className="absolute left-12.5 top-12 z-40">
+            <h1 className="font-black text-[72px] leading-[0.9] tracking-[-3px] text-white">
+              TODAY’S
+            </h1>
+
+            {/* Steak Society */}
+            <div className="relative mt-9.5 ml-18.75">
+              {/* White shadow */}
+              <div className="absolute left-2 top-2 h-17.5 w-83.75 rounded-full bg-white" />
+
+              <div className="relative flex h-17.5 w-81.25 items-center justify-center rounded-full bg-[#ff5145]">
+                <span className="text-[29px] font-extrabold tracking-[-1px] text-white">
+                  STEAK SOCIETY
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main food */}
+          <div className="absolute left-[15%] top-8 -mt-40">
+            <Image
+              src="/healthy-bruschetta.png"
+              alt="Food"
+              width={918}
+              height={917}
+              priority
+              className="object-contain drop-shadow-[0_15px_12px_rgba(0,0,0,0.35)]"
+            />
+          </div>
+
+          {/* Plus */}
+          <div className="absolute right-[29%] top-8 z-50 mr-21">
+            <span className="font-bold text-[68px] leading-none text-[#ff5145]">
+              +
+            </span>
+          </div>
+
+          {/* Cake */}
+          <div className="absolute right-[4%] -top-16.25 z-50 mr-50">
+            <Image
+              src="/cake.png"
+              alt="Cake"
+              width={315}
+              height={190}
+              priority
+              className="h-47.5 w-78.75 object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.25)]"
+            />
+          </div>
+
+          {/* Small dish */}
+          <div className="absolute right-[7%] z-40 mr-50">
+            <Image
+              src="/dish.png"
+              alt="Dish"
+              width={220}
+              height={150}
+              className="h-37.5 w-55 object-contain"
+            />
+          </div>
+
+          {/* OFFER */}
+          <div className="absolute right-[8%] top-36.25 z-30 mr-30">
+            <h2 className="font-black text-[78px] leading-none tracking-[-3px] text-white">
+              OFFER!
+            </h2>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// rounded-tr-[170px]
+
+
+
+
+
+

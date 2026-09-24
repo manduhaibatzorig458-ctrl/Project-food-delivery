@@ -1,49 +1,48 @@
-// export default function Header() {
-//   return (
-//     <header className="flex items-center justify-between gap-6 px-6 py-4 sm:px-10 bg-[#0d0d0d] border-b border-white/[0.06]">
-//       <link href="/" className="flex items-center gap-2.5 no-underline">
-//         <span
-//           className="grid place-items-center w-[34px] h-[34px] rounded-full bg-[#e8543d] text-base"
-//           aria-hidden="true"
-//         >
-//           🍔
-//         </span>
-//         <span className="flex flex-col leading-tight">
-//           <span className="font-serif font-extrabold text-lg text-white">
-//             Nom<span className="text-[#e8543d]">Nom</span>
-//           </span>
-//           <span className="text-[11px] text-neutral-400">Swift delivery</span>
-//         </span>
-//       </link>
+import React from "react";
+import { MapPin, ShoppingCart, User, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-//       <div className="flex items-center gap-3">
-//         <button
-//           type="button"
-//           className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-[#e8543d] text-[#e8543d] text-sm bg-transparent cursor-pointer"
-//         >
-//           <span className="text-sm">📍</span>
-//           <span>
-//             Delivery address: <strong className="text-white font-semibold">Add location</strong>
-//           </span>
-//           <span className="text-neutral-400">›</span>
-//         </button>
+export default function Header() {
+  return (
+    <header className="flex items-center justify-between bg-neutral-900 px-8 py-3.5">
+      <div className="flex items-center gap-2.5">
+        <img src="/Logo.png" alt="NomNom logo" className="h-8 w-8 object-contain" />
+        <div className="flex flex-col leading-tight">
+          <span className="text-lg font-bold text-white">
+            Nom<span className="text-orange-500">Nom</span>
+          </span>
+          <span className="text-[11px] text-neutral-400">Swift delivery</span>
+        </div>
+      </div>
 
-//         <button
-//           type="button"
-//           className="grid place-items-center w-[38px] h-[38px] rounded-full border-none bg-white/[0.08] text-white text-[15px] cursor-pointer"
-//           aria-label="Cart"
-//         >
-//           🛒
-//         </button>
+      <div className="flex items-center gap-3.5">
+        <Button
+          variant="secondary"
+          className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[13px] text-red-500 hover:bg-white/90"
+        >
+          <MapPin className="h-4 w-4" />
+          Delivery address:
+          <span className="font-semibold text-neutral-900">Add Location</span>
+          <ChevronRight className="h-4 w-4 text-neutral-900" />
+        </Button>
 
-//         <button
-//           type="button"
-//           className="grid place-items-center w-[38px] h-[38px] rounded-full border-none bg-[#e8543d] text-white text-[15px] cursor-pointer"
-//           aria-label="Account"
-//         >
-//           👤
-//         </button>
-//       </div>
-//     </header>
-//   );
-// }
+        <Button
+          size="icon"
+          variant="secondary"
+          aria-label="Cart"
+          className="h-9 w-9 rounded-full bg-white hover:bg-white/90"
+        >
+          <ShoppingCart className="h-4 w-4 text-neutral-900" />
+        </Button>
+
+        <Button
+          size="icon"
+          aria-label="Profile"
+          className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-500/90"
+        >
+          <User className="h-4 w-4 text-white" />
+        </Button>
+      </div>
+    </header>
+  );
+}
