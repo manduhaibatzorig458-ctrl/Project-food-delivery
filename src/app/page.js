@@ -4,31 +4,25 @@ import { useEffect, useState } from "react";
 
 import Header from "./_components/header.js";
 import HeroBanner from "./_features/hero-banner";
-import CategoryTabs from "./_features/category-tabs";
 import FoodGrid from "./_features/food-grid";
-
 
 const API_URL = "http://localhost:1000";
 
 export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [dishes, setDishes] = useState([]);
-  const [activeId, setActiveId] = useState(null);
 
   useEffect(() => {
     async function loadCategories() {
       try {
-        const response = await fetch(
-          `${API_URL}/food-category/get`
-        );
-
+        const response = await fetch(`${API_URL}/food-category/get`);
         const data = await response.json();
 
         console.log("CATEGORY DATA:", data);
 
         const list = Array.isArray(data)
           ? data
-          : data.data || data.categories || [];
+          : data.data || data.categories || data.foodCategories || [];
 
         const formatted = list.map((category) => ({
           id: category._id || category.id,
@@ -36,10 +30,6 @@ export default function HomePage() {
         }));
 
         setCategories(formatted);
-
-        if (formatted.length > 0) {
-          setActiveId(formatted[0].id);
-        }
       } catch (error) {
         console.error("CATEGORY ERROR:", error);
       }
@@ -47,9 +37,7 @@ export default function HomePage() {
 
     async function loadDishes() {
       try {
-        const response = await fetch(
-          `${API_URL}/food-dish/get`
-        );
+        const response = await fetch(`${API_URL}/food-dish/get`);
 
         if (!response.ok) {
           console.log("DISH API ERROR:", response.status);
@@ -62,19 +50,20 @@ export default function HomePage() {
 
         const list = Array.isArray(data)
           ? data
-          : data.data || data.dishes || [];
+          : data.data || data.dishes || data.foodDishes || [];
 
         const formatted = list.map((dish) => ({
           id: dish._id || dish.id,
-          name: dish.name || dish.dishName,
+          name: dish.name || dish.dishName || dish.foodName,
           price: Number(dish.price) || 0,
-          description: dish.description || "",
+          description: dish.description || dish.ingredients || "",
           emoji: dish.emoji || "🍽️",
           image: dish.image || dish.imageUrl || "",
           categoryId:
             dish.categoryId ||
             dish.category?._id ||
             dish.category?.id ||
+            dish.category ||
             dish.foodCategoryId,
         }));
 
@@ -88,31 +77,18 @@ export default function HomePage() {
     loadDishes();
   }, []);
 
-  const activeCategory = categories.find(
-    (category) => category.id === activeId
-  );
-
   return (
     <main>
       <Header />
-
       <HeroBanner />
 
-      {categories.length > 0 && (
-        <CategoryTabs
-          categories={categories}
-          activeId={activeId}
-          onChange={setActiveId}
-        />
-      )}
-
-      {activeCategory && (
+      {categories.map((category) => (
         <FoodGrid
+          key={category.id}
           dishes={dishes}
-          activeCategory={activeCategory}
+          activeCategory={category}
         />
-      )}
-
+      ))}
     </main>
   );
 }

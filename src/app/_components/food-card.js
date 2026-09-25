@@ -35,7 +35,7 @@
 export default function FoodCard({ dish }) {
   return (
     <article className="bg-white rounded-2xl overflow-hidden text-[#1a1a1a]">
-      <div className="relative h-[140px] bg-gradient-to-br from-[#efe6d8] to-[#d9cdb8] grid place-items-center">
+      <div className="relative h-35 bg-linear-to-br from-[#efe6d8] to-[#d9cdb8] grid place-items-center">
         {dish.image ? (
           <img
             src={dish.image}

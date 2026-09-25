@@ -6,7 +6,7 @@ import { LayoutDashboard, Truck } from "lucide-react";
 
 export default function Sidebar() {
   return (
-    <aside className="flex h-screen w-60 flex-col px-4 py-6">
+    <aside className="flex h-screen w-60 flex-col px-4 py-6 bg-white">
       {/* Logo */}
       <div className="mb-10 flex items-center gap-5 px-2">
         <Image

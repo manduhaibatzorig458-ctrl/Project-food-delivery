@@ -12,7 +12,7 @@ export default function DishCard(props) {
         <img
           src={props.dish.image}
           alt={props.dish.name}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover"s
         />
 
         {/* Edit button */}
