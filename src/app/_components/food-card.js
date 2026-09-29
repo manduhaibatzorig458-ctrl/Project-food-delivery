@@ -1,81 +1,46 @@
-// export default function FoodCard({ dish }) {
-//   return (
-//     <article className="bg-white rounded-2xl overflow-hidden text-[#1a1a1a]">
-//       <div className="relative h-[140px] bg-gradient-to-br from-[#efe6d8] to-[#d9cdb8] grid place-items-center">
-//         <span className="text-5xl" role="img" aria-label={dish.name}>
-//           {dish.emoji}
-//         </span>
-//         <button
-//           type="button"
-//           aria-label={`Add ${dish.name}`}
-//           className="absolute bottom-2.5 right-2.5 w-7 h-7 rounded-full border-none bg-white text-[#1a1a1a] text-base leading-none cursor-pointer shadow-[0_2px_6px_rgba(0,0,0,0.2)]"
-//         >
-//           +
-//         </button>
-//       </div>
-
-//       <div className="px-4 pt-3.5 pb-4.5">
-//         <div className="flex items-baseline justify-between gap-2">
-//           <h3 className="m-0 text-[15px] font-bold text-[#e8543d]">{dish.name}</h3>
-//           <span className="text-sm font-bold text-[#1a1a1a] whitespace-nowrap">
-//             ${dish.price.toFixed(2)}
-//           </span>
-//         </div>
-//         <p className="mt-1.5 mb-0 text-xs leading-relaxed text-neutral-500">
-//           {dish.description}
-//         </p>
-//       </div>
-//     </article>
-//   );
-// }
-
-
 "use client";
 
-export default function FoodCard({ dish }) {
+export default function FoodCard({ dish, onAdd }) {
   return (
-    <article className="bg-white rounded-2xl overflow-hidden text-[#1a1a1a]">
-      <div className="relative h-35 bg-linear-to-br from-[#efe6d8] to-[#d9cdb8] grid place-items-center">
+    <div className="flex h-full w-full flex-col rounded-[14px] bg-white p-2.5 text-[#111]">
+      <div className="relative aspect-[231/133] w-full shrink-0 overflow-hidden rounded-[10px] bg-neutral-200">
         {dish.image ? (
           <img
             src={dish.image}
             alt={dish.name}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
-          <span
-            className="text-5xl"
-            role="img"
-            aria-label={dish.name}
-          >
+          <div className="flex h-full items-center justify-center text-4xl">
             {dish.emoji || "🍽️"}
-          </span>
+          </div>
         )}
 
+        {/* Add button */}
         <button
           type="button"
           aria-label={`Add ${dish.name}`}
-          className="absolute bottom-2.5 right-2.5 w-7 h-7 rounded-full border-none bg-white text-[#1a1a1a] text-base leading-none cursor-pointer shadow-[0_2px_6px_rgba(0,0,0,0.2)]"
+          onClick={() => onAdd?.(dish)}
+          className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-base leading-none text-red-500 hover:bg-neutral-100"
         >
           +
         </button>
       </div>
 
-      <div className="px-4 pt-3.5 pb-4.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="m-0 text-[15px] font-bold text-[#e8543d]">
-            {dish.name}
-          </h3>
-
-          <span className="text-sm font-bold text-[#1a1a1a] whitespace-nowrap">
-            ${Number(dish.price || 0).toFixed(2)}
-          </span>
-        </div>
-
-        <p className="mt-1.5 mb-0 text-xs leading-relaxed text-neutral-500">
-          {dish.description}
-        </p>
+      {/* Name and price */}
+      <div className="mt-3.5 flex items-center justify-between gap-2">
+        <h3 className="truncate text-base font-medium text-[#e0483d]">
+          {dish.name}
+        </h3>
+        <span className="shrink-0 text-[13px] font-bold">
+          ${Number(dish.price || 0).toFixed(2)}
+        </span>
       </div>
-    </article>
+
+      {/* Description (2 мөрийн зай үргэлж хадгалагдана) */}
+      <p className="mb-0.5 mt-2 line-clamp-2 min-h-[2.7em] text-[10px] leading-[1.35] text-[#111]">
+        {dish.description}
+      </p>
+    </div>
   );
 }

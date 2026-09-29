@@ -1,24 +1,30 @@
 import FoodCard from "../_components/food-card";
 
-export default function FoodGrid({ dishes, activeCategory }) {
-  const filtered = dishes.filter(
-    (dish) =>
-      String(dish.categoryId) === String(activeCategory.id)
+export default function FoodGrid({ dishes, activeCategory, hideEmpty = false }) {
+  const filteredDishes = dishes.filter(
+    (dish) => dish.categoryId === activeCategory.id
   );
 
+  if (hideEmpty && filteredDishes.length === 0) {
+    return null;
+  }
+
   return (
-    <section className="max-w-6xl mx-auto px-6 sm:px-10 pt-4 pb-14">
-      <h2 className="font-serif text-[22px] font-bold my-2 mb-5 text-white">
+    <section
+      id={`category-${activeCategory.id}`}
+      className="mx-auto w-full max-w-375 px-[7%] py-8"
+    >
+      <h2 className="mb-6 text-lg font-semibold text-white lg:text-2xl">
         {activeCategory.label}
       </h2>
 
-      {filtered.length === 0 ? (
-        <p className="text-neutral-400 text-sm">
+      {filteredDishes.length === 0 ? (
+        <p className="text-sm text-neutral-400">
           No dishes in this category yet.
         </p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
-          {filtered.map((dish) => (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredDishes.map((dish) => (
             <FoodCard key={dish.id} dish={dish} />
           ))}
         </div>
