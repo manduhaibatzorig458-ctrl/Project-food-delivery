@@ -1,7 +1,13 @@
+import Sidebar from "../food-menu/_components/sidebar";
+import OrdersTable from "./_features/orders-table";
+
 const OrdersPage = () => {
   return (
-    <div>
-      <h1>Orders Page</h1>
+    <div className="flex min-h-screen bg-zinc-100">
+      <Sidebar />
+      <div className="flex-1">
+        <OrdersTable />
+      </div>
     </div>
   );
 };
