@@ -60,6 +60,7 @@ const FoodCell = ({ items }) => {
         <ul className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg bg-white p-3 shadow-lg ring-1 ring-zinc-100">
           {items.map((item, i) => (
             <li key={i} className="flex items-center gap-3 py-1.5 text-xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.food?.image}
                 alt=""
@@ -103,8 +104,9 @@ const OrderRow = memo(function OrderRow({
       <td className="px-4 py-4">{formatDate(order.createdAt)}</td>
       <td className="px-4 py-4">${order.totalPrice.toFixed(2)}</td>
       <td className="px-4 py-4">
+        {/* Zahialga deer hadgalsan hayag; huuchin zahialga deer hereglegchiin hayag */}
         <p className="line-clamp-2 max-w-[240px] text-xs text-zinc-500">
-          {order.user?.address || "-"}
+          {order.address || order.user?.address || "-"}
         </p>
       </td>
       <td className="px-4 py-4">

@@ -2,12 +2,12 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import axios from "axios";
 
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { backend } from "@/app/_api/api";
 import { FieldError } from "../_components/field-error";
 
 const loginSchema = z.object({
@@ -43,32 +43,28 @@ export default function LoginForm() {
       setLoading(true);
       setServerError("");
 
-      console.log("Login data:", {
+      const response = await backend.post("/auth/login", {
         email: data.email,
         password: data.password,
       });
 
-      const response = axios.post(
-        "http://localhost:1000/auth/login",
-        {
-          email: data.email,
-          password: data.password,
-        }
-      );
+      const { token, user } = response.data;
+      if (!token) {
+        setServerError("Login failed: token not received.");
+        return;
+      }
 
-      console.log("Login successful:", response.data);
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
-      localStorage.setItem("user", JSON.stringify(response.data));
-
-      // Login амжилттай бол admin руу очно
-      window.location.href = "/admin";
+      // admin bol admin huudas, busad ni nuur huudas ruu
+      window.location.href = user?.role === "admin" ? "/admin" : "/";
     } catch (error) {
       console.error("Login failed:", error);
 
       if (error.response) {
         setServerError(
-          error.response.data?.message ||
-            "Email or password is incorrect."
+          error.response.data?.message || "Email or password is incorrect.",
         );
       } else {
         setServerError("Cannot connect to the server.");
@@ -79,10 +75,7 @@ export default function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="mt-6 flex flex-col gap-4"
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
       {/* EMAIL */}
       <div>
         <input
@@ -118,21 +111,11 @@ export default function LoginForm() {
           {/* SHOW / HIDE PASSWORD */}
           <button
             type="button"
-            onClick={() =>
-              setShowPassword((prev) => !prev)
-            }
-            aria-label={
-              showPassword
-                ? "Hide password"
-                : "Show password"
-            }
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600"
           >
-            {showPassword ? (
-              <EyeOff size={18} />
-            ) : (
-              <Eye size={18} />
-            )}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
 
@@ -140,11 +123,7 @@ export default function LoginForm() {
       </div>
 
       {/* SERVER ERROR */}
-      {serverError && (
-        <p className="text-xs text-red-500">
-          {serverError}
-        </p>
-      )}
+      {serverError && <p className="text-xs text-red-500">{serverError}</p>}
 
       {/* FORGOT PASSWORD */}
       <button

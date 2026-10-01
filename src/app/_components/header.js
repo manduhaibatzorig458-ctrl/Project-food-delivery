@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { MapPin, ShoppingCart, User, ChevronRight } from "lucide-react";
+import { MapPin, ShoppingCart, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/app/(provider)/cart-provider";
+import UserMenu from "./user-menu";
 
 export default function Header() {
   const { itemCount, address, openCart } = useCart();
@@ -11,6 +12,7 @@ export default function Header() {
   return (
     <header className="flex items-center justify-between bg-[#19191b] px-[6%] py-4">
       <div className="flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/Logo.png"
           alt="NomNom logo"
@@ -59,12 +61,8 @@ export default function Header() {
           )}
         </Button>
 
-        <Button
-          size="icon"
-          className="h-11 w-11 rounded-full bg-[#ec5b48] hover:bg-[#ec5b48]/90"
-        >
-          <User className="h-5 w-5 text-white" />
-        </Button>
+        {/* Nevtreegui bol Log in / Sign up, nevtersen bol email + Sign out */}
+        <UserMenu />
       </div>
     </header>
   );

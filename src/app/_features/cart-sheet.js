@@ -15,9 +15,25 @@ function formatDate(iso) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
 }
 
-// isLoggedIn ogoogui bol localStorage-iin "token"-oor shalgana (checkout darah uyd shine).
+// Backend-iin zahialgiig (GET /orders/me) UI-d hereglegdeh helber ruu hurvuulne.
+function normalizeOrder(o) {
+  const rawId = String(o._id ?? o.id ?? "");
+  return {
+    key: rawId,
+    id: o.orderNumber ?? rawId.slice(-5).toUpperCase(),
+    total: Number(o.totalPrice ?? o.total ?? 0),
+    status: String(o.status ?? "PENDING").toLowerCase(),
+    createdAt: o.createdAt,
+    address: o.address ?? o.user?.address ?? "",
+    items: (o.foodOrderItems ?? []).map((i, idx) => ({
+      id: i.food?._id ?? i._id ?? idx,
+      name: i.food?.name ?? i.name ?? "Food",
+      quantity: i.quantity,
+    })),
+  };
+}
+
 export default function CartSheet({
-  isLoggedIn,
   loginHref = "/auth/login",
   signupHref = "/auth/signup",
 }) {
@@ -30,7 +46,6 @@ export default function CartSheet({
     changeQuantity,
     removeItem,
     setAddress,
-    orders,
     placeOrder,
   } = useCart();
 
@@ -46,6 +61,46 @@ export default function CartSheet({
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState("");
+  const [myOrders, setMyOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState("");
+  const [needsLogin, setNeedsLogin] = useState(false);
+
+  // Zuvhun nevtersen hereglegchiin ooriin zahialguudiig serveree avna.
+  async function loadOrders() {
+    const token = localStorage.getItem("token");
+    if (!token || token === "undefined") {
+      setMyOrders([]);
+      setNeedsLogin(true);
+      return;
+    }
+    setNeedsLogin(false);
+    setOrdersLoading(true);
+    setOrdersError("");
+    try {
+      const res = await backend.get("/orders/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const list = Array.isArray(res.data) ? res.data : (res.data?.orders ?? []);
+      setMyOrders(list.map(normalizeOrder));
+    } catch (error) {
+      console.error("Load orders failed:", error);
+      if (error.response?.status === 401) {
+        setMyOrders([]);
+        setNeedsLogin(true);
+      } else {
+        setOrdersError("Could not load your orders.");
+      }
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
+  // Order tab ee neeh burt (esvel sheet neegdeh uyd) shineer achaalna.
+  useEffect(() => {
+    if (isOpen && tab === "order") loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, tab]);
 
   // Native <dialog>: Esc, focus trap, backdrop-iig browser hiine.
   useEffect(() => {
@@ -87,39 +142,52 @@ export default function CartSheet({
   }
 
   async function handleCheckout() {
-    const loggedIn = isLoggedIn ?? Boolean(localStorage.getItem("token"));
-    if (!loggedIn) {
-      setShowLogin(true);
-      return;
-    }
+    // Hayag hooson bol daraagiin yu ch hiihgui: aldaa haruulj, talbar ruu focus hiine.
     if (!address.trim()) {
       setAddressError(true);
       addressRef.current?.focus();
       return;
     }
+    const token = localStorage.getItem("token");
+    if (!token || token === "undefined") {
+      setShowLogin(true);
+      return;
+    }
     const cleanAddress = address.trim();
     // Une/dun ilgeehgui: server oor tootsoolno. Zuvhun ymar hool, hed, haana gedgiig ilgeene.
     const payload = {
-      // Admin huudas foodOrderItems[{ food, quantity }] gej unshdag tul ijil butetstei ilgeene.
       foodOrderItems: items.map(({ id, quantity }) => ({ food: id, quantity })),
       address: cleanAddress,
     };
-    console.log(payload);
 
     setSubmitting(true);
     setOrderError("");
     try {
       await backend.post("/orders", payload, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      // Server hadgalsnii daraa l cart-iig tseverlene ba history-d nemne.
-      placeOrder({ address: cleanAddress, total: sumCents / 100 });
+      // Server zahialgiig hadgalsan: amjilttai medegdliig ehleed haruulna.
       setShowSuccess(true);
+      setAddressError(false);
+      try {
+        // Cart-iig tseverlene, hayagiig arilgana, history-g shinechilne.
+        placeOrder({ address: cleanAddress, total: sumCents / 100 });
+        setAddress("");
+        loadOrders();
+      } catch (localError) {
+        console.error("Post-order cleanup failed:", localError);
+      }
     } catch (error) {
       console.error("Order failed:", error);
-      setOrderError(
-        error.response?.data?.message || "Could not place your order. Please try again.",
-      );
+      if (error.response?.status === 401) {
+        // token hugatsaa duussan esvel buruu: dahin nevtruulne
+        localStorage.removeItem("token");
+        setShowLogin(true);
+      } else {
+        setOrderError(
+          error.response?.data?.message || "Could not place your order. Please try again.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -188,12 +256,22 @@ export default function CartSheet({
           {tab === "order" ? (
             <section className="rounded-2xl bg-white p-4">
               <h3 className="mb-3 text-base font-semibold">Order history</h3>
-              {orders.length === 0 ? (
+              {needsLogin ? (
+                <p className="py-6 text-center text-sm text-neutral-600">
+                  Log in to see your orders.
+                </p>
+              ) : ordersLoading ? (
+                <p className="py-6 text-center text-sm text-neutral-600">Loading...</p>
+              ) : ordersError ? (
+                <p role="alert" className="py-6 text-center text-sm text-[#e0483d]">
+                  {ordersError}
+                </p>
+              ) : myOrders.length === 0 ? (
                 <p className="py-6 text-center text-sm text-neutral-600">No orders yet.</p>
               ) : (
                 <ul className="divide-y divide-dashed divide-neutral-300">
-                  {orders.map((order) => (
-                    <li key={order.id} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
+                  {myOrders.map((order) => (
+                    <li key={order.key} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-semibold">
                           {money(Math.round(order.total * 100))}{" "}
@@ -241,6 +319,7 @@ export default function CartSheet({
                   <ul className="divide-y divide-dashed divide-neutral-300">
                     {items.map((item) => (
                       <li key={item.id} className="flex gap-3 py-3 first:pt-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.image}
                           alt={item.name}
@@ -248,7 +327,14 @@ export default function CartSheet({
                         />
                         <div className="flex min-w-0 flex-1 flex-col justify-between">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="truncate text-sm font-semibold text-[#e0483d]">{item.name}</p>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-[#e0483d]">{item.name}</p>
+                              {item.description && (
+                                <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-neutral-500">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
                             <button
                               type="button"
                               onClick={() => setPendingRemove(item)}
@@ -288,6 +374,7 @@ export default function CartSheet({
                   </ul>
                 ) : (
                   <div className="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 px-6 py-8 text-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/Logo.png" alt="" className="mb-2 h-14 w-14 object-contain" />
                     <p className="text-sm font-semibold">Your cart is empty</p>
                     <p className="text-xs text-neutral-500">
@@ -301,18 +388,21 @@ export default function CartSheet({
                   ref={addressRef}
                   value={address}
                   onChange={handleAddressChange}
-                  placeholder="Please share your complete address"
-                  rows={3}
+                  onBlur={() => {
+                    if (!address.trim()) setAddressError(true);
+                  }}
+                  placeholder={addressError ? "Please complete your address" : "Please share your complete address"}
+                  rows={2}
                   aria-invalid={addressError}
                   aria-describedby={addressError ? "address-error" : undefined}
-                  className={`w-full resize-none rounded-md border p-2 text-sm outline-none ${
+                  className={`w-full resize-none rounded-md border px-3 py-2.5 text-sm outline-none placeholder:text-neutral-400 ${
                     addressError
-                      ? "border-[#e0483d] focus:border-[#e0483d]"
+                      ? "border-[#e0483d]/50 focus:border-[#e0483d]/70"
                       : "border-neutral-200 focus:border-neutral-500"
                   }`}
                 />
                 {addressError && (
-                  <p id="address-error" role="alert" className="mt-1 text-xs text-[#e0483d]">
+                  <p id="address-error" role="alert" className="mt-1 text-xs leading-none text-[#e0483d]">
                     Please complete your address
                   </p>
                 )}
@@ -339,7 +429,10 @@ export default function CartSheet({
                   type="button"
                   onClick={handleCheckout}
                   disabled={!hasItems || submitting}
-                  className="mt-4 h-11 w-full rounded-full bg-[#e0483d] text-sm text-white disabled:opacity-50"
+                  aria-disabled={!address.trim()}
+                  className={`mt-4 h-11 w-full rounded-full bg-[#e0483d] text-sm text-white disabled:opacity-50 ${
+                    !address.trim() ? "cursor-not-allowed opacity-50" : ""
+                  }`}
                 >
                   {submitting ? "Placing order..." : "Checkout"}
                 </button>
