@@ -105,7 +105,7 @@ const OrderRow = memo(function OrderRow({
       <td className="px-4 py-4">${order.totalPrice.toFixed(2)}</td>
       <td className="px-4 py-4">
         {/* Zahialga deer hadgalsan hayag; huuchin zahialga deer hereglegchiin hayag */}
-        <p className="line-clamp-2 max-w-[240px] text-xs text-zinc-500">
+        <p className="line-clamp-2 max-w-60 text-xs text-zinc-500">
           {order.address || order.user?.address || "-"}
         </p>
       </td>
@@ -137,7 +137,9 @@ export default function OrdersTable() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`${API}/admin/orders`, { headers: authHeaders() });
+        const res = await fetch(`${API}/admin/orders`, {
+          headers: authHeaders(),
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
         setOrders(data);
@@ -164,7 +166,7 @@ export default function OrdersTable() {
     return [...filtered].sort((a, b) =>
       sort.key === "date"
         ? (new Date(a.createdAt) - new Date(b.createdAt)) * dir
-        : a.status.localeCompare(b.status) * dir
+        : a.status.localeCompare(b.status) * dir,
     );
   }, [orders, dateRange, sort]);
 
@@ -180,7 +182,7 @@ export default function OrdersTable() {
     setSort((prev) =>
       prev.key === key
         ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "asc" }
+        : { key, dir: "asc" },
     );
     setPage(1);
   };
@@ -196,7 +198,9 @@ export default function OrdersTable() {
   const handleToggleAll = () => {
     setSelected((prev) => {
       const next = new Set(prev);
-      pageRows.forEach((o) => (allSelected ? next.delete(o._id) : next.add(o._id)));
+      pageRows.forEach((o) =>
+        allSelected ? next.delete(o._id) : next.add(o._id),
+      );
       return next;
     });
   };
@@ -207,7 +211,7 @@ export default function OrdersTable() {
     try {
       const saved = await patchStatus(id, status);
       setOrders((prev) =>
-        prev.map((o) => (o._id === id ? { ...o, status: saved } : o))
+        prev.map((o) => (o._id === id ? { ...o, status: saved } : o)),
       );
     } catch (err) {
       setError(err.message);
@@ -221,11 +225,15 @@ export default function OrdersTable() {
     const ids = [...selected];
     setBulkSaving(true);
 
-    const results = await Promise.allSettled(ids.map((id) => patchStatus(id, status)));
-    const okIds = new Set(ids.filter((_, i) => results[i].status === "fulfilled"));
+    const results = await Promise.allSettled(
+      ids.map((id) => patchStatus(id, status)),
+    );
+    const okIds = new Set(
+      ids.filter((_, i) => results[i].status === "fulfilled"),
+    );
 
     setOrders((prev) =>
-      prev.map((o) => (okIds.has(o._id) ? { ...o, status } : o))
+      prev.map((o) => (okIds.has(o._id) ? { ...o, status } : o)),
     );
 
     const failed = results.find((r) => r.status === "rejected");
@@ -293,7 +301,9 @@ export default function OrdersTable() {
               <th className="px-4 py-4 font-normal">№</th>
               <th className="px-4 py-4 font-normal">Customer</th>
               <th className="px-4 py-4 font-normal">Food</th>
-              <th className="px-4 py-4 font-normal">{sortHead("Date", "date")}</th>
+              <th className="px-4 py-4 font-normal">
+                {sortHead("Date", "date")}
+              </th>
               <th className="px-4 py-4 font-normal">Total</th>
               <th className="px-4 py-4 font-normal">Delivery Address</th>
               <th className="px-4 py-4 font-normal">
@@ -304,7 +314,10 @@ export default function OrdersTable() {
           <tbody>
             {pageRows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-sm text-zinc-500">
+                <td
+                  colSpan={8}
+                  className="px-4 py-10 text-center text-sm text-zinc-500"
+                >
                   Захиалга олдсонгүй
                 </td>
               </tr>
@@ -324,7 +337,11 @@ export default function OrdersTable() {
         </table>
       </div>
 
-      <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
+      <Pagination
+        page={currentPage}
+        totalPages={totalPages}
+        onChange={setPage}
+      />
 
       {modalOpen && (
         <ChangeStateModal

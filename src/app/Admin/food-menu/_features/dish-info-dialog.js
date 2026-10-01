@@ -13,9 +13,7 @@ export default function EditDishDialog({
 }) {
   const [foodName, setFoodName] = useState(dish.name || "");
   const [categoryId, setCategoryId] = useState(dish.categoryId || "");
-  const [ingredients, setIngredients] = useState(
-    dish.description || ""
-  );
+  const [ingredients, setIngredients] = useState(dish.description || "");
   const [price, setPrice] = useState(dish.price || "");
   const [image, setImage] = useState(dish.image || "");
 
@@ -25,13 +23,9 @@ export default function EditDishDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const category = categories.find(
-    (item) => item.id === categoryId
-  );
+  const category = categories.find((item) => item.id === categoryId);
 
-  const categoryName = category
-    ? category.label
-    : "Select category";
+  const categoryName = category ? category.label : "Select category";
 
   // Image сонгох
   const handleImage = (event) => {
@@ -78,25 +72,19 @@ export default function EditDishDialog({
         dishData.image = image;
       }
 
-      const response = await backend.put(
-        `/food-dish/${dish.id}`,
-        dishData
-      );
+      const response = await backend.put(`/food-dish/${dish.id}`, dishData);
 
       console.log("UPDATE DISH:", response.data);
 
       const updatedDish =
-        response.data.dish ||
-        response.data.foodDish ||
-        response.data;
+        response.data.dish || response.data.foodDish || response.data;
 
       onUpdated({
         id: updatedDish._id || dish.id,
         categoryId: updatedDish.category || categoryId,
         name: updatedDish.foodName || foodName,
         price: updatedDish.price || price,
-        description:
-          updatedDish.ingredients || ingredients,
+        description: updatedDish.ingredients || ingredients,
         image: updatedDish.image || image,
       });
     } catch (error) {
@@ -109,15 +97,10 @@ export default function EditDishDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-
         {/* Header */}
         <div className="flex items-center justify-between">
-
-          <h2 className="text-2xl font-bold text-gray-900">
-            Dishes info
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">Dishes info</h2>
 
           <button
             onClick={onClose}
@@ -126,11 +109,9 @@ export default function EditDishDialog({
           >
             <X size={16} />
           </button>
-
         </div>
 
         <div className="mt-6 space-y-4">
-
           {/* Dish name */}
           <div>
             <label className="mb-2 block text-sm text-gray-500">
@@ -140,9 +121,7 @@ export default function EditDishDialog({
             <input
               type="text"
               value={foodName}
-              onChange={(event) =>
-                setFoodName(event.target.value)
-              }
+              onChange={(event) => setFoodName(event.target.value)}
               disabled={loading}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none"
             />
@@ -155,12 +134,9 @@ export default function EditDishDialog({
             </label>
 
             <div className="relative">
-
               <button
                 type="button"
-                onClick={() =>
-                  setCategoryOpen(!categoryOpen)
-                }
+                onClick={() => setCategoryOpen(!categoryOpen)}
                 disabled={loading}
                 className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-1"
               >
@@ -168,15 +144,11 @@ export default function EditDishDialog({
                   {categoryName}
                 </span>
 
-                <ChevronsUpDown
-                  size={14}
-                  className="text-gray-400"
-                />
+                <ChevronsUpDown size={14} className="text-gray-400" />
               </button>
 
               {categoryOpen && (
                 <div className="absolute z-10 mt-2 w-full rounded-xl border bg-white p-2 shadow-lg">
-
                   {categories.map((category) => (
                     <button
                       key={category.id}
@@ -190,10 +162,8 @@ export default function EditDishDialog({
                       {category.label}
                     </button>
                   ))}
-
                 </div>
               )}
-
             </div>
           </div>
 
@@ -206,9 +176,7 @@ export default function EditDishDialog({
             <textarea
               rows={2}
               value={ingredients}
-              onChange={(event) =>
-                setIngredients(event.target.value)
-              }
+              onChange={(event) => setIngredients(event.target.value)}
               disabled={loading}
               className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none"
             />
@@ -216,16 +184,12 @@ export default function EditDishDialog({
 
           {/* Price */}
           <div>
-            <label className="mb-2 block text-sm text-gray-500">
-              Price
-            </label>
+            <label className="mb-2 block text-sm text-gray-500">Price</label>
 
             <input
               type="text"
               value={price}
-              onChange={(event) =>
-                setPrice(event.target.value)
-              }
+              onChange={(event) => setPrice(event.target.value)}
               disabled={loading}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none"
             />
@@ -233,13 +197,10 @@ export default function EditDishDialog({
 
           {/* Image */}
           <div>
-            <label className="mb-2 block text-sm text-gray-500">
-              Image
-            </label>
+            <label className="mb-2 block text-sm text-gray-500">Image</label>
 
             {image ? (
               <div className="relative">
-
                 <img
                   src={image}
                   alt={foodName}
@@ -257,7 +218,6 @@ export default function EditDishDialog({
                 >
                   <X size={14} />
                 </button>
-
               </div>
             ) : (
               <input
@@ -271,17 +231,11 @@ export default function EditDishDialog({
           </div>
 
           {/* Error */}
-          {error && (
-            <p className="text-sm text-red-500">
-              {error}
-            </p>
-          )}
-
+          {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
 
         {/* Buttons */}
         <div className="mt-6 flex items-center justify-between">
-
           {/* Delete */}
           <button
             type="button"
@@ -300,9 +254,7 @@ export default function EditDishDialog({
           >
             {loading ? "Saving..." : "Save changes"}
           </button>
-
         </div>
-
       </div>
     </div>
   );

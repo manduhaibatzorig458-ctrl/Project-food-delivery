@@ -14,7 +14,7 @@ export default function ChangeStateModal({ saving, onClose, onSave }) {
       onClick={onClose}
     >
       <div
-        className="w-[400px] rounded-2xl bg-white p-6 shadow-xl"
+        className="w-100 rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
