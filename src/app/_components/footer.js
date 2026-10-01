@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default function Footer({ categories = [] }) {
   return (
-    <footer className={`${inter.className} bg-[#19191b] text-white`}>
+    <footer className={`${inter.className} bg-[#19191b] text-white pt-10`}>
       {/* Red text */}
       <div className="overflow-hidden bg-[#e0544f] py-5">
         <div className="footer-marquee flex w-max">
