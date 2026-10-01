@@ -41,10 +41,7 @@ export default function FoodMenuPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [highlightDishId, setHighlightDishId] = useState(null);
 
-  // ==========================================
   // GET CATEGORIES
-  // ==========================================
-
   async function loadCategories() {
     try {
       const response = await backend.get("/food-category/get");
@@ -65,19 +62,13 @@ export default function FoodMenuPage() {
       setCategories(newCategories);
     } catch (error) {
       console.log("GET CATEGORY ERROR:", error);
-      console.log(
-        "GET CATEGORY ERROR RESPONSE:",
-        error.response?.data
-      );
+      console.log("GET CATEGORY ERROR RESPONSE:", error.response?.data);
 
       setError("Failed to load categories");
     }
   }
 
-  // ==========================================
   // GET DISHES
-  // ==========================================
-
   async function loadDishes() {
     try {
       const response = await backend.get("/food-dish/get");
@@ -85,9 +76,7 @@ export default function FoodMenuPage() {
       console.log("GET DISH:", response.data);
 
       const dishList =
-        response.data.dishes ||
-        response.data.foodDishes ||
-        response.data;
+        response.data.dishes || response.data.foodDishes || response.data;
 
       const newDishes = dishList.map((item) => ({
         id: item._id,
@@ -101,28 +90,19 @@ export default function FoodMenuPage() {
       setDishes(newDishes);
     } catch (error) {
       console.log("GET DISH ERROR:", error);
-      console.log(
-        "GET DISH ERROR RESPONSE:",
-        error.response?.data
-      );
+      console.log("GET DISH ERROR RESPONSE:", error.response?.data);
 
       setError("Failed to load dishes");
     }
   }
 
-  // ==========================================
   // PAGE LOAD
-  // ==========================================
-
   useEffect(() => {
     loadCategories();
     loadDishes();
   }, []);
 
-  // ==========================================
   // TOAST
-  // ==========================================
-
   useEffect(() => {
     if (!toastMessage) return;
 
@@ -133,10 +113,7 @@ export default function FoodMenuPage() {
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
-  // ==========================================
   // HIGHLIGHT
-  // ==========================================
-
   useEffect(() => {
     if (!highlightDishId) return;
 
@@ -147,10 +124,7 @@ export default function FoodMenuPage() {
     return () => clearTimeout(timer);
   }, [highlightDishId]);
 
-  // ==========================================
   // ADD CATEGORY
-  // ==========================================
-
   async function handleAddCategory() {
     const name = categoryName.trim();
 
@@ -170,9 +144,7 @@ export default function FoodMenuPage() {
       console.log("CREATE CATEGORY:", response.data);
 
       const newCategory =
-        response.data.category ||
-        response.data.foodCategory ||
-        response.data;
+        response.data.category || response.data.foodCategory || response.data;
 
       const category = {
         id: newCategory._id,
@@ -189,10 +161,7 @@ export default function FoodMenuPage() {
     } catch (error) {
       console.log("CREATE CATEGORY ERROR:", error);
 
-      console.log(
-        "CREATE CATEGORY ERROR RESPONSE:",
-        error.response?.data
-      );
+      console.log("CREATE CATEGORY ERROR RESPONSE:", error.response?.data);
 
       setError("Failed to add category");
     }
@@ -200,16 +169,11 @@ export default function FoodMenuPage() {
     setLoading(false);
   }
 
-  // ==========================================
   // OPEN DELETE CATEGORY
-  // ==========================================
-
   function handleOpenDelete(id) {
     console.log("OPEN DELETE CATEGORY:", id);
 
-    const category = categories.find(
-      (item) => item.id === id
-    );
+    const category = categories.find((item) => item.id === id);
 
     if (!category) {
       console.log("CATEGORY NOT FOUND:", id);
@@ -220,46 +184,31 @@ export default function FoodMenuPage() {
     setShowDeleteModal(true);
   }
 
-  // ==========================================
   // DELETE CATEGORY
-  // ==========================================
-
   async function handleDeleteCategory() {
     if (!categoryToDelete) {
       console.log("NO CATEGORY TO DELETE");
       return;
     }
 
-    console.log(
-      "DELETE CATEGORY ID:",
-      categoryToDelete.id
-    );
+    console.log("DELETE CATEGORY ID:", categoryToDelete.id);
 
     setDeleteLoading(true);
     setError("");
 
     try {
       const response = await backend.delete(
-        `/food-category/delete/${categoryToDelete.id}`
+        `/food-category/delete/${categoryToDelete.id}`,
       );
 
-      console.log(
-        "DELETE CATEGORY RESPONSE:",
-        response.data
-      );
+      console.log("DELETE CATEGORY RESPONSE:", response.data);
 
       setCategories((prev) =>
-        prev.filter(
-          (category) =>
-            category.id !== categoryToDelete.id
-        )
+        prev.filter((category) => category.id !== categoryToDelete.id),
       );
 
       setDishes((prev) =>
-        prev.filter(
-          (dish) =>
-            dish.categoryId !== categoryToDelete.id
-        )
+        prev.filter((dish) => dish.categoryId !== categoryToDelete.id),
       );
 
       setSelectedId("all");
@@ -267,19 +216,11 @@ export default function FoodMenuPage() {
       setShowDeleteModal(false);
       setCategoryToDelete(null);
 
-      setToastMessage(
-        "Category successfully deleted"
-      );
+      setToastMessage("Category successfully deleted");
     } catch (error) {
-      console.log(
-        "DELETE CATEGORY ERROR:",
-        error
-      );
+      console.log("DELETE CATEGORY ERROR:", error);
 
-      console.log(
-        "DELETE CATEGORY ERROR RESPONSE:",
-        error.response?.data
-      );
+      console.log("DELETE CATEGORY ERROR RESPONSE:", error.response?.data);
 
       setError("Failed to delete category");
     }
@@ -287,10 +228,7 @@ export default function FoodMenuPage() {
     setDeleteLoading(false);
   }
 
-  // ==========================================
   // OPEN ADD DISH
-  // ==========================================
-
   function handleAddDish(category) {
     console.log("ADD DISH TO:", category);
 
@@ -298,18 +236,13 @@ export default function FoodMenuPage() {
     setShowAddDishModal(true);
   }
 
-  // ==========================================
   // DISH ADDED
-  // ==========================================
-
   function handleDishAdded(newDish) {
     console.log("NEW DISH:", newDish);
 
     const dish = {
       id: newDish._id,
-      categoryId:
-        newDish.category ||
-        selectedCategory?.id,
+      categoryId: newDish.category || selectedCategory?.id,
       name: newDish.foodName,
       price: newDish.price,
       description: newDish.ingredients,
@@ -318,9 +251,7 @@ export default function FoodMenuPage() {
 
     setDishes((prev) => [...prev, dish]);
 
-    setToastMessage(
-      "New dish is being added to the menu"
-    );
+    setToastMessage("New dish is being added to the menu");
 
     setHighlightDishId(dish.id);
 
@@ -328,10 +259,7 @@ export default function FoodMenuPage() {
     setSelectedCategory(null);
   }
 
-  // ==========================================
   // OPEN EDIT DISH
-  // ==========================================
-
   function handleEditDish(dish) {
     console.log("EDIT DISH:", dish);
 
@@ -339,15 +267,9 @@ export default function FoodMenuPage() {
     setShowDishInfoModal(true);
   }
 
-  // ==========================================
   // DISH UPDATED
-  // ==========================================
-
   function handleDishUpdated(updatedDish) {
-    console.log(
-      "UPDATED DISH:",
-      updatedDish
-    );
+    console.log("UPDATED DISH:", updatedDish);
 
     const newDishes = dishes.map((dish) => {
       if (dish.id === updatedDish.id) {
@@ -359,9 +281,7 @@ export default function FoodMenuPage() {
 
     setDishes(newDishes);
 
-    setToastMessage(
-      "Dish updated successfully"
-    );
+    setToastMessage("Dish updated successfully");
 
     setHighlightDishId(updatedDish.id);
 
@@ -369,15 +289,9 @@ export default function FoodMenuPage() {
     setDishToEdit(null);
   }
 
-  // ==========================================
   // OPEN DELETE DISH
-  // ==========================================
-
   function handleRequestDeleteDish(dish) {
-    console.log(
-      "OPEN DELETE DISH:",
-      dish
-    );
+    console.log("OPEN DELETE DISH:", dish);
 
     setShowDishInfoModal(false);
     setDishToEdit(null);
@@ -386,57 +300,33 @@ export default function FoodMenuPage() {
     setShowDeleteDishModal(true);
   }
 
-  // ==========================================
   // DELETE DISH
-  // ==========================================
-
   async function handleDeleteDish() {
     if (!dishToDelete) {
       console.log("NO DISH TO DELETE");
       return;
     }
 
-    console.log(
-      "DELETE DISH ID:",
-      dishToDelete.id
-    );
+    console.log("DELETE DISH ID:", dishToDelete.id);
 
     setDeleteDishLoading(true);
     setError("");
 
     try {
-      const response = await backend.delete(
-        `/food-dish/${dishToDelete.id}`
-      );
+      const response = await backend.delete(`/food-dish/${dishToDelete.id}`);
 
-      console.log(
-        "DELETE DISH RESPONSE:",
-        response.data
-      );
+      console.log("DELETE DISH RESPONSE:", response.data);
 
-      setDishes((prev) =>
-        prev.filter(
-          (dish) =>
-            dish.id !== dishToDelete.id
-        )
-      );
+      setDishes((prev) => prev.filter((dish) => dish.id !== dishToDelete.id));
 
-      setToastMessage(
-        "Dish successfully deleted"
-      );
+      setToastMessage("Dish successfully deleted");
 
       setShowDeleteDishModal(false);
       setDishToDelete(null);
     } catch (error) {
-      console.log(
-        "DELETE DISH ERROR:",
-        error
-      );
+      console.log("DELETE DISH ERROR:", error);
 
-      console.log(
-        "DELETE DISH ERROR RESPONSE:",
-        error.response?.data
-      );
+      console.log("DELETE DISH ERROR RESPONSE:", error.response?.data);
 
       setError("Failed to delete dish");
     }
@@ -444,15 +334,11 @@ export default function FoodMenuPage() {
     setDeleteDishLoading(false);
   }
 
-  // ==========================================
   // CATEGORY COUNT
-  // ==========================================
-
   const categoriesWithCount = useMemo(() => {
     return categories.map((category) => {
       const count = dishes.filter(
-        (dish) =>
-          dish.categoryId === category.id
+        (dish) => dish.categoryId === category.id,
       ).length;
 
       return {
@@ -462,24 +348,16 @@ export default function FoodMenuPage() {
     });
   }, [categories, dishes]);
 
-  // ==========================================
   // CATEGORY TO SHOW
-  // ==========================================
-
   let categoriesToShow = categoriesWithCount;
 
   if (selectedId !== "all") {
-    categoriesToShow =
-      categoriesWithCount.filter(
-        (category) =>
-          category.id === selectedId
-      );
+    categoriesToShow = categoriesWithCount.filter(
+      (category) => category.id === selectedId,
+    );
   }
 
-  // ==========================================
   // PAGE
-  // ==========================================
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
@@ -487,22 +365,15 @@ export default function FoodMenuPage() {
       <main className="flex-1 p-6">
 
         {/* TOAST */}
-
         {toastMessage && (
           <div className="fixed right-6 top-6 z-50 flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-lg">
-            <CheckCircle2
-              size={20}
-              className="text-green-500"
-            />
+            <CheckCircle2 size={20} className="text-green-500" />
 
-            <span className="text-sm font-medium">
-              {toastMessage}
-            </span>
+            <span className="text-sm font-medium">{toastMessage}</span>
           </div>
         )}
 
         {/* ERROR */}
-
         {error && (
           <div className="mb-4 flex items-center justify-between rounded-xl bg-red-50 px-4 py-3 text-sm text-red-500">
             <span>{error}</span>
@@ -518,71 +389,51 @@ export default function FoodMenuPage() {
         )}
 
         {/* CATEGORY CHIPS */}
-
         <CategoryChips
           categories={categoriesWithCount}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onAddCategory={() =>
-            setShowAddModal(true)
-          }
+          onAddCategory={() => setShowAddModal(true)}
           onDeleteCategory={handleOpenDelete}
           deleteLoading={deleteLoading}
         />
 
         {/* CATEGORY SECTIONS */}
-
         <div className="mt-6 space-y-6">
-          {categoriesToShow.map(
-            (category) => {
-              const categoryDishes =
-                dishes.filter(
-                  (dish) =>
-                    dish.categoryId ===
-                    category.id
-                );
+          {categoriesToShow.map((category) => {
+            const categoryDishes = dishes.filter(
+              (dish) => dish.categoryId === category.id,
+            );
 
-              return (
-                <CategorySection
-                  key={category.id}
-                  category={category}
-                  dishes={categoryDishes}
-                  onAddDish={handleAddDish}
-                  onEditDish={handleEditDish}
-                  highlightDishId={
-                    highlightDishId
-                  }
-                />
-              );
-            }
-          )}
+            return (
+              <CategorySection
+                key={category.id}
+                category={category}
+                dishes={categoryDishes}
+                onAddDish={handleAddDish}
+                onEditDish={handleEditDish}
+                highlightDishId={highlightDishId}
+              />
+            );
+          })}
         </div>
       </main>
 
-      {/* ========================================
-          ADD CATEGORY
-      ======================================== */}
-
+      {/* ADD CATEGORY */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white p-6">
-
-            <h2 className="mb-4 text-xl font-semibold">
-              Add Category
-            </h2>
+            <h2 className="mb-4 text-xl font-semibold">Add Category</h2>
 
             <input
               type="text"
               value={categoryName}
-              onChange={(e) =>
-                setCategoryName(e.target.value)
-              }
+              onChange={(e) => setCategoryName(e.target.value)}
               placeholder="Category name"
               className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none"
             />
 
             <div className="mt-5 flex justify-end gap-3">
-
               <button
                 type="button"
                 onClick={() => {
@@ -600,168 +451,109 @@ export default function FoodMenuPage() {
                 disabled={loading}
                 className="rounded-lg bg-red-500 px-5 py-2 text-white"
               >
-                {loading
-                  ? "Adding..."
-                  : "Add"}
+                {loading ? "Adding..." : "Add"}
               </button>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================
-          DELETE CATEGORY
-      ======================================== */}
+      {/* DELETE CATEGORY */}
+      {showDeleteModal && categoryToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h2 className="text-xl font-semibold">Delete Category</h2>
 
-      {showDeleteModal &&
-        categoryToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <p className="mt-3 text-gray-600">
+              Are you sure you want to delete <b>{categoryToDelete.label}</b>?
+            </p>
 
-            <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setCategoryToDelete(null);
+                }}
+                className="rounded-lg px-4 py-2 text-gray-600"
+              >
+                Cancel
+              </button>
 
-              <h2 className="text-xl font-semibold">
-                Delete Category
-              </h2>
-
-              <p className="mt-3 text-gray-600">
-                Are you sure you want to delete{" "}
-                <b>
-                  {categoryToDelete.label}
-                </b>
-                ?
-              </p>
-
-              <div className="mt-6 flex justify-end gap-3">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setCategoryToDelete(null);
-                  }}
-                  className="rounded-lg px-4 py-2 text-gray-600"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    handleDeleteCategory
-                  }
-                  disabled={deleteLoading}
-                  className="rounded-lg bg-red-500 px-5 py-2 text-white"
-                >
-                  {deleteLoading
-                    ? "Deleting..."
-                    : "Delete"}
-                </button>
-
-              </div>
+              <button
+                type="button"
+                onClick={handleDeleteCategory}
+                disabled={deleteLoading}
+                className="rounded-lg bg-red-500 px-5 py-2 text-white"
+              >
+                {deleteLoading ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-      {/* ========================================
-          ADD DISH
-      ======================================== */}
+      {/* ADD DISH */}
+      {showAddDishModal && selectedCategory && (
+        <AddDishDialog
+          categoryId={selectedCategory.id}
+          categoryLabel={selectedCategory.label}
+          onClose={() => {
+            setShowAddDishModal(false);
+            setSelectedCategory(null);
+          }}
+          onDishAdded={handleDishAdded}
+        />
+      )}
 
-      {showAddDishModal &&
-        selectedCategory && (
-          <AddDishDialog
-            categoryId={
-              selectedCategory.id
-            }
-            categoryLabel={
-              selectedCategory.label
-            }
-            onClose={() => {
-              setShowAddDishModal(false);
-              setSelectedCategory(null);
-            }}
-            onDishAdded={
-              handleDishAdded
-            }
-          />
-        )}
+      {/* EDIT DISH */}
+      {showDishInfoModal && dishToEdit && (
+        <DishInfoDialog
+          dish={dishToEdit}
+          categories={categories}
+          onClose={() => {
+            setShowDishInfoModal(false);
+            setDishToEdit(null);
+          }}
+          onUpdated={handleDishUpdated}
+          onDeleteRequest={handleRequestDeleteDish}
+        />
+      )}
 
-      {/* ========================================
-          EDIT DISH
-      ======================================== */}
+      {/*  DELETE DISH */}
+      {showDeleteDishModal && dishToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h2 className="text-xl font-semibold">Delete Dish</h2>
 
-      {showDishInfoModal &&
-        dishToEdit && (
-          <DishInfoDialog
-            dish={dishToEdit}
-            categories={categories}
-            onClose={() => {
-              setShowDishInfoModal(false);
-              setDishToEdit(null);
-            }}
-            onUpdated={
-              handleDishUpdated
-            }
-            onDeleteRequest={
-              handleRequestDeleteDish
-            }
-          />
-        )}
+            <p className="mt-3 text-gray-600">
+              Are you sure you want to delete <b>{dishToDelete.name}</b>?
+            </p>
 
-      {/* ========================================
-          DELETE DISH
-      ======================================== */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteDishModal(false);
+                  setDishToDelete(null);
+                }}
+                className="rounded-lg px-4 py-2 text-gray-600"
+              >
+                Cancel
+              </button>
 
-      {showDeleteDishModal &&
-        dishToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-
-            <div className="w-full max-w-md rounded-2xl bg-white p-6">
-
-              <h2 className="text-xl font-semibold">
-                Delete Dish
-              </h2>
-
-              <p className="mt-3 text-gray-600">
-                Are you sure you want to delete{" "}
-                <b>
-                  {dishToDelete.name}
-                </b>
-                ?
-              </p>
-
-              <div className="mt-6 flex justify-end gap-3">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeleteDishModal(false);
-                    setDishToDelete(null);
-                  }}
-                  className="rounded-lg px-4 py-2 text-gray-600"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    handleDeleteDish
-                  }
-                  disabled={
-                    deleteDishLoading
-                  }
-                  className="rounded-lg bg-red-500 px-5 py-2 text-white"
-                >
-                  {deleteDishLoading
-                    ? "Deleting..."
-                    : "Delete"}
-                </button>
-
-              </div>
+              <button
+                type="button"
+                onClick={handleDeleteDish}
+                disabled={deleteDishLoading}
+                className="rounded-lg bg-red-500 px-5 py-2 text-white"
+              >
+                {deleteDishLoading ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }
