@@ -2,35 +2,53 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Clock, Map, Minus, Plus, ShoppingCart, Utensils, X } from "lucide-react";
+import {
+  Check,
+  Clock,
+  Map,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Utensils,
+  X,
+} from "lucide-react";
+
 import { useCart } from "@/app/(provider)/cart-provider";
 import { backend } from "@/app/_api/api";
 
-const DELIVERY_FEE_CENTS = 99;
-const money = (cents) => `$${(cents / 100).toFixed(2)}`;
+const DELIVERY_FEE = 0.99;
 
-function formatDate(iso) {
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+function money(price) {
+  return `$${price.toFixed(2)}`;
 }
 
-// Backend-iin zahialgiig (GET /orders/me) UI-d hereglegdeh helber ruu hurvuulne.
-function normalizeOrder(o) {
-  const rawId = String(o._id ?? o.id ?? "");
+// Backend order-ийг UI-д хэрэгтэй хэлбэрт оруулна
+function formatOrder(order) {
+  const id = String(order._id || order.id || "");
+
   return {
-    key: rawId,
-    id: o.orderNumber ?? rawId.slice(-5).toUpperCase(),
-    total: Number(o.totalPrice ?? o.total ?? 0),
-    status: String(o.status ?? "PENDING").toLowerCase(),
-    createdAt: o.createdAt,
-    address: o.address ?? o.user?.address ?? "",
-    items: (o.foodOrderItems ?? []).map((i, idx) => ({
-      id: i.food?._id ?? i._id ?? idx,
-      name: i.food?.name ?? i.name ?? "Food",
-      quantity: i.quantity,
+    key: id,
+    id: order.orderNumber || id.slice(-5).toUpperCase(),
+    total: Number(order.totalPrice || order.total || 0),
+    status: String(order.status || "PENDING").toLowerCase(),
+    createdAt: order.createdAt,
+    address: order.address || order.user?.address || "",
+
+    items: (order.foodOrderItems || []).map((item, index) => ({
+      id: item.food?._id || item._id || index,
+      name: item.food?.name || item.name || "Food",
+      quantity: item.quantity,
     })),
   };
+}
+
+function formatDate(date) {
+  const d = new Date(date);
+
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}/${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default function CartSheet({
@@ -55,180 +73,241 @@ export default function CartSheet({
   const addressRef = useRef(null);
 
   const [tab, setTab] = useState("cart");
-  const [pendingRemove, setPendingRemove] = useState(null); // ustgahyn umnu asuuh mor
+
+  const [removeItemData, setRemoveItemData] = useState(null);
+
   const [addressError, setAddressError] = useState(false);
+
   const [showLogin, setShowLogin] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
+  const [loading, setLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
-  const [myOrders, setMyOrders] = useState([]);
+
+  const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState("");
   const [needsLogin, setNeedsLogin] = useState(false);
 
-  // Zuvhun nevtersen hereglegchiin ooriin zahialguudiig serveree avna.
+  const hasItems = items.length > 0;
+
+
+  // Load orders
   async function loadOrders() {
     const token = localStorage.getItem("token");
+
     if (!token || token === "undefined") {
-      setMyOrders([]);
+      setOrders([]);
       setNeedsLogin(true);
       return;
     }
+
     setNeedsLogin(false);
     setOrdersLoading(true);
     setOrdersError("");
+
     try {
-      const res = await backend.get("/orders/me", {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await backend.get("/orders/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      const list = Array.isArray(res.data) ? res.data : (res.data?.orders ?? []);
-      setMyOrders(list.map(normalizeOrder));
+
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.orders || [];
+
+      setOrders(data.map(formatOrder));
     } catch (error) {
       console.error("Load orders failed:", error);
+
       if (error.response?.status === 401) {
-        setMyOrders([]);
+        setOrders([]);
         setNeedsLogin(true);
       } else {
         setOrdersError("Could not load your orders.");
       }
-    } finally {
-      setOrdersLoading(false);
     }
+
+    setOrdersLoading(false);
   }
 
-  // Order tab ee neeh burt (esvel sheet neegdeh uyd) shineer achaalna.
+  // Order tab нээгдэхэд orders авна
   useEffect(() => {
-    if (isOpen && tab === "order") loadOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isOpen && tab === "order") {
+      loadOrders();
+    }
   }, [isOpen, tab]);
 
-  // Native <dialog>: Esc, focus trap, backdrop-iig browser hiine.
+  // Dialog open / close
   useEffect(() => {
     const dialog = sheetRef.current;
+
     if (!dialog) return;
-    if (isOpen && !dialog.open) dialog.showModal();
-    else if (!isOpen && dialog.open) dialog.close();
+
+    if (isOpen && !dialog.open) {
+      dialog.showModal();
+    }
+
+    if (!isOpen && dialog.open) {
+      dialog.close();
+    }
   }, [isOpen]);
 
   useEffect(() => {
     const dialog = loginRef.current;
+
     if (!dialog) return;
-    if (showLogin && !dialog.open) dialog.showModal();
-    else if (!showLogin && dialog.open) dialog.close();
+
+    if (showLogin && !dialog.open) {
+      dialog.showModal();
+    }
+
+    if (!showLogin && dialog.open) {
+      dialog.close();
+    }
   }, [showLogin]);
 
   useEffect(() => {
     const dialog = successRef.current;
+
     if (!dialog) return;
-    if (showSuccess && !dialog.open) dialog.showModal();
-    else if (!showSuccess && dialog.open) dialog.close();
+
+    if (showSuccess && !dialog.open) {
+      dialog.showModal();
+    }
+
+    if (!showSuccess && dialog.open) {
+      dialog.close();
+    }
   }, [showSuccess]);
 
-  // Ene dugnelt zuvhun harahad zoriulsan. Server oor tootsoolj, ene toog ignore hiine.
-  const hasItems = items.length > 0;
-  const itemsCents = Math.round(total * 100);
-  const feeCents = hasItems ? DELIVERY_FEE_CENTS : 0;
-  const sumCents = itemsCents + feeCents;
-
-  function handleAddressChange(e) {
+  // Address
+  function handleAddress(e) {
     const value = e.target.value;
+
     setAddress(value);
-    if (value.trim()) setAddressError(false);
+
+    if (value.trim()) {
+      setAddressError(false);
+    }
   }
 
+
+  // Remove item
   function confirmRemove() {
-    if (pendingRemove) removeItem(pendingRemove.id);
-    setPendingRemove(null);
+    if (removeItemData) {
+      removeItem(removeItemData.id);
+    }
+
+    setRemoveItemData(null);
   }
 
-  async function handleCheckout() {
-    // Hayag hooson bol daraagiin yu ch hiihgui: aldaa haruulj, talbar ruu focus hiine.
+  // Checkout
+  async function checkout() {
+    // Address байхгүй бол
     if (!address.trim()) {
       setAddressError(true);
       addressRef.current?.focus();
       return;
     }
+
+    // Login хийгээгүй бол
     const token = localStorage.getItem("token");
+
     if (!token || token === "undefined") {
       setShowLogin(true);
       return;
     }
-    const cleanAddress = address.trim();
-    // Une/dun ilgeehgui: server oor tootsoolno. Zuvhun ymar hool, hed, haana gedgiig ilgeene.
-    const payload = {
-      foodOrderItems: items.map(({ id, quantity }) => ({ food: id, quantity })),
-      address: cleanAddress,
+
+    const orderData = {
+      foodOrderItems: items.map((item) => ({
+        food: item.id,
+        quantity: item.quantity,
+      })),
+      address: address.trim(),
     };
 
-    setSubmitting(true);
+    setLoading(true);
     setOrderError("");
+
     try {
-      await backend.post("/orders", payload, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Backend рүү order явуулна
+      await backend.post("/orders", orderData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      // Server zahialgiig hadgalsan: amjilttai medegdliig ehleed haruulna.
+
+      // Амжилттай
       setShowSuccess(true);
       setAddressError(false);
-      try {
-        // Cart-iig tseverlene, hayagiig arilgana, history-g shinechilne.
-        placeOrder({ address: cleanAddress, total: sumCents / 100 });
-        setAddress("");
-        loadOrders();
-      } catch (localError) {
-        console.error("Post-order cleanup failed:", localError);
-      }
+
+      // Cart цэвэрлэнэ
+      placeOrder({
+        address: address.trim(),
+        total: total + DELIVERY_FEE,
+      });
+
+      setAddress("");
+
+      // Order history шинэчилнэ
+      loadOrders();
     } catch (error) {
       console.error("Order failed:", error);
+
       if (error.response?.status === 401) {
-        // token hugatsaa duussan esvel buruu: dahin nevtruulne
         localStorage.removeItem("token");
         setShowLogin(true);
       } else {
         setOrderError(
-          error.response?.data?.message || "Could not place your order. Please try again.",
+          error.response?.data?.message ||
+            "Could not place your order. Please try again.",
         );
       }
-    } finally {
-      setSubmitting(false);
     }
+
+    setLoading(false);
   }
 
-  function backToHome() {
+  // Back to home
+  function backHome() {
     setShowSuccess(false);
     closeCart();
   }
 
-  // Log in / Sign up ruu shiljihed sheet ba dialog-iig haana.
-  function leaveToAuth() {
+  function goToAuth() {
     setShowLogin(false);
     closeCart();
   }
 
   return (
     <>
+   {/* card sheet */}
       <dialog
         ref={sheetRef}
         onClose={() => {
-          setPendingRemove(null);
+          setRemoveItemData(null);
           closeCart();
         }}
         onClick={(e) => {
-          if (e.target === sheetRef.current) closeCart();
+          if (e.target === sheetRef.current) {
+            closeCart();
+          }
         }}
-        aria-label="Order detail"
-        className="fixed right-0 top-0 left-auto my-0 mr-0 ml-auto h-dvh max-h-none w-[min(420px,100vw)] max-w-none overflow-hidden bg-neutral-700 p-0 text-neutral-900 backdrop:bg-black/50"
+        className="fixed left-auto right-0 top-0 m-0 h-dvh w-[min(420px,100vw)] max-w-none overflow-hidden bg-neutral-700 p-0 text-neutral-900 backdrop:bg-black/50"
       >
-        <div className="relative flex h-full flex-col gap-4 overflow-y-auto p-5">
+        <div className="flex h-full flex-col gap-4 overflow-y-auto p-5">
           {/* Header */}
           <div className="flex items-center justify-between text-white">
             <h2 className="flex items-center gap-3 text-lg font-semibold">
               <ShoppingCart className="size-5" />
               Order detail
             </h2>
+
             <button
               type="button"
               onClick={closeCart}
-              aria-label="Close"
               className="flex h-8 w-8 items-center justify-center rounded-full border border-neutral-400 hover:bg-neutral-600"
             >
               <X className="size-4" />
@@ -236,208 +315,275 @@ export default function CartSheet({
           </div>
 
           {/* Tabs */}
-          <div className="grid grid-cols-2 rounded-full bg-white p-0.5 text-sm font-medium" role="tablist">
-            {["cart", "order"].map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
-                className={`rounded-full py-2 capitalize ${
-                  tab === t ? "bg-[#e0483d] text-white" : "text-neutral-900"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 rounded-full bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setTab("cart")}
+              className={`rounded-full py-2 text-sm ${
+                tab === "cart" ? "bg-[#e0483d] text-white" : "text-neutral-900"
+              }`}
+            >
+              Cart
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab("order")}
+              className={`rounded-full py-2 text-sm ${
+                tab === "order" ? "bg-[#e0483d] text-white" : "text-neutral-900"
+              }`}
+            >
+              Order
+            </button>
           </div>
 
+          {/* ORDER HISTORY */}
           {tab === "order" ? (
             <section className="rounded-2xl bg-white p-4">
               <h3 className="mb-3 text-base font-semibold">Order history</h3>
+
               {needsLogin ? (
                 <p className="py-6 text-center text-sm text-neutral-600">
                   Log in to see your orders.
                 </p>
               ) : ordersLoading ? (
-                <p className="py-6 text-center text-sm text-neutral-600">Loading...</p>
+                <p className="py-6 text-center text-sm text-neutral-600">
+                  Loading...
+                </p>
               ) : ordersError ? (
-                <p role="alert" className="py-6 text-center text-sm text-[#e0483d]">
+                <p className="py-6 text-center text-sm text-[#e0483d]">
                   {ordersError}
                 </p>
-              ) : myOrders.length === 0 ? (
-                <p className="py-6 text-center text-sm text-neutral-600">No orders yet.</p>
+              ) : orders.length === 0 ? (
+                <p className="py-6 text-center text-sm text-neutral-600">
+                  No orders yet.
+                </p>
               ) : (
-                <ul className="divide-y divide-dashed divide-neutral-300">
-                  {myOrders.map((order) => (
-                    <li key={order.key} className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
-                      <div className="flex items-center justify-between gap-2">
+                <div>
+                  {orders.map((order) => (
+                    <div
+                      key={order.key}
+                      className="border-b border-dashed border-neutral-300 py-4"
+                    >
+                      {/* Price + status */}
+                      <div className="flex justify-between">
                         <p className="text-sm font-semibold">
-                          {money(Math.round(order.total * 100))}{" "}
+                          {money(order.total)}{" "}
                           <span className="font-normal">(#{order.id})</span>
                         </p>
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                            order.status === "delivered"
-                              ? "bg-neutral-200 text-neutral-700"
-                              : "border border-[#e0483d] text-[#e0483d]"
-                          }`}
-                        >
-                          {order.status === "delivered" ? "Delivered" : "Pending"}
+
+                        <span className="rounded-full border border-[#e0483d] px-2.5 py-0.5 text-[11px] text-[#e0483d]">
+                          {order.status === "delivered"
+                            ? "Delivered"
+                            : "Pending"}
                         </span>
                       </div>
+
+                      {/* Foods */}
                       {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between text-xs text-neutral-500">
+                        <div
+                          key={item.id}
+                          className="mt-2 flex justify-between text-xs text-neutral-500"
+                        >
                           <span className="flex items-center gap-2">
                             <Utensils className="size-3.5" />
                             {item.name}
                           </span>
+
                           <span>x {item.quantity}</span>
                         </div>
                       ))}
-                      <p className="flex items-center gap-2 text-xs text-neutral-500">
-                        <Clock className="size-3.5 shrink-0" />
+
+                      {/* Date */}
+                      <p className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+                        <Clock className="size-3.5" />
                         {formatDate(order.createdAt)}
                       </p>
-                      <p className="flex items-center gap-2 text-xs text-neutral-500">
-                        <Map className="size-3.5 shrink-0" />
+
+                      {/* Address */}
+                      <p className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+                        <Map className="size-3.5" />
                         <span className="truncate">{order.address}</span>
                       </p>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </section>
           ) : (
             <>
-              {/* My cart + delivery location */}
+              {/* MY CART */}
               <section className="rounded-2xl bg-white p-4">
-                <h3 className="mb-3 text-base font-semibold text-neutral-500">My cart</h3>
+                <h3 className="mb-3 text-base font-semibold text-neutral-500">
+                  My cart
+                </h3>
 
                 {hasItems ? (
-                  <ul className="divide-y divide-dashed divide-neutral-300">
+                  <div>
                     {items.map((item) => (
-                      <li key={item.id} className="flex gap-3 py-3 first:pt-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <div
+                        key={item.id}
+                        className="flex gap-3 border-b border-dashed border-neutral-300 py-3"
+                      >
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="h-[100px] w-[100px] shrink-0 rounded-lg object-cover"
+                          className="h-[100px] w-[100px] rounded-lg object-cover"
                         />
+
                         <div className="flex min-w-0 flex-1 flex-col justify-between">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-[#e0483d]">{item.name}</p>
+                          {/* Name + remove */}
+                          <div className="flex justify-between gap-2">
+                            <div>
+                              <p className="truncate text-sm font-semibold text-[#e0483d]">
+                                {item.name}
+                              </p>
+
                               {item.description && (
-                                <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-neutral-500">
+                                <p className="mt-1 line-clamp-2 text-[11px] text-neutral-500">
                                   {item.description}
                                 </p>
                               )}
                             </div>
+
                             <button
                               type="button"
-                              onClick={() => setPendingRemove(item)}
-                              aria-label={`Remove ${item.name}`}
+                              onClick={() => setRemoveItemData(item)}
                               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e0483d] text-[#e0483d]"
                             >
                               <X className="size-4" />
                             </button>
                           </div>
+
+                          {/* Quantity + price */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <button
                                 type="button"
-                                onClick={() => changeQuantity(item.id, item.quantity - 1)}
                                 disabled={item.quantity <= 1}
-                                aria-label="Decrease quantity"
+                                onClick={() =>
+                                  changeQuantity(item.id, item.quantity - 1)
+                                }
                                 className="disabled:opacity-30"
                               >
                                 <Minus className="size-4" />
                               </button>
-                              <span className="w-4 text-center text-sm font-medium">{item.quantity}</span>
+
+                              <span className="w-4 text-center text-sm">
+                                {item.quantity}
+                              </span>
+
                               <button
                                 type="button"
-                                onClick={() => changeQuantity(item.id, item.quantity + 1)}
-                                aria-label="Increase quantity"
+                                onClick={() =>
+                                  changeQuantity(item.id, item.quantity + 1)
+                                }
                               >
                                 <Plus className="size-4" />
                               </button>
                             </div>
+
                             <span className="text-sm font-bold">
-                              {money(Math.round(item.price * 100) * item.quantity)}
+                              {money(item.price * item.quantity)}
                             </span>
                           </div>
                         </div>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-1 rounded-xl bg-neutral-100 px-6 py-8 text-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/Logo.png" alt="" className="mb-2 h-14 w-14 object-contain" />
+                  /* Empty cart */
+                  <div className="rounded-xl bg-neutral-100 px-6 py-8 text-center">
+                    <img
+                      src="/Logo.png"
+                      alt=""
+                      className="mx-auto mb-2 h-14 w-14"
+                    />
+
                     <p className="text-sm font-semibold">Your cart is empty</p>
+
                     <p className="text-xs text-neutral-500">
-                      Add some delicious dishes to your cart and satisfy your cravings!
+                      Add some delicious dishes to your cart and satisfy your
+                      cravings!
                     </p>
                   </div>
                 )}
 
-                <h3 className="mb-2 mt-6 text-base font-semibold text-neutral-500">Delivery location</h3>
+                {/* Delivery location */}
+                <h3 className="mb-2 mt-6 text-base font-semibold text-neutral-500">
+                  Delivery location
+                </h3>
+
                 <textarea
                   ref={addressRef}
                   value={address}
-                  onChange={handleAddressChange}
+                  onChange={handleAddress}
                   onBlur={() => {
-                    if (!address.trim()) setAddressError(true);
+                    if (!address.trim()) {
+                      setAddressError(true);
+                    }
                   }}
-                  placeholder={addressError ? "Please complete your address" : "Please share your complete address"}
-                  rows={2}
-                  aria-invalid={addressError}
-                  aria-describedby={addressError ? "address-error" : undefined}
-                  className={`w-full resize-none rounded-md border px-3 py-2.5 text-sm outline-none placeholder:text-neutral-400 ${
+                  placeholder={
                     addressError
-                      ? "border-[#e0483d]/50 focus:border-[#e0483d]/70"
-                      : "border-neutral-200 focus:border-neutral-500"
+                      ? "Please complete your address"
+                      : "Please share your complete address"
+                  }
+                  rows={2}
+                  className={`w-full resize-none rounded-md border px-3 py-2.5 text-sm outline-none ${
+                    addressError ? "border-[#e0483d]" : "border-neutral-200"
                   }`}
                 />
+
                 {addressError && (
-                  <p id="address-error" role="alert" className="mt-1 text-xs leading-none text-[#e0483d]">
+                  <p className="mt-1 text-xs text-[#e0483d]">
                     Please complete your address
                   </p>
                 )}
               </section>
 
-              {/* Payment info */}
+              {/*  PAYMENT */}
               <section className="rounded-2xl bg-white p-4">
-                <h3 className="mb-3 text-base font-semibold text-neutral-500">Payment info</h3>
-                <dl className="flex flex-col gap-2 text-sm">
+                <h3 className="mb-3 text-base font-semibold text-neutral-500">
+                  Payment info
+                </h3>
+
+                <div className="flex flex-col gap-2 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-neutral-500">Items</dt>
-                    <dd className="font-bold">{hasItems ? money(itemsCents) : "-"}</dd>
+                    <span className="text-neutral-500">Items</span>
+
+                    <span className="font-bold">
+                      {hasItems ? money(total) : "-"}
+                    </span>
                   </div>
+
                   <div className="flex justify-between">
-                    <dt className="text-neutral-500">Shipping</dt>
-                    <dd className="font-bold">{hasItems ? money(feeCents) : "-"}</dd>
+                    <span className="text-neutral-500">Shipping</span>
+
+                    <span className="font-bold">
+                      {hasItems ? money(DELIVERY_FEE) : "-"}
+                    </span>
                   </div>
-                  <div className="mt-1 flex justify-between border-t border-dashed border-neutral-300 pt-3">
-                    <dt className="text-neutral-500">Total</dt>
-                    <dd className="font-bold">{hasItems ? money(sumCents) : "-"}</dd>
+
+                  <div className="flex justify-between border-t border-dashed border-neutral-300 pt-3">
+                    <span className="text-neutral-500">Total</span>
+
+                    <span className="font-bold">
+                      {hasItems ? money(total + DELIVERY_FEE) : "-"}
+                    </span>
                   </div>
-                </dl>
+                </div>
+
                 <button
                   type="button"
-                  onClick={handleCheckout}
-                  disabled={!hasItems || submitting}
-                  aria-disabled={!address.trim()}
-                  className={`mt-4 h-11 w-full rounded-full bg-[#e0483d] text-sm text-white disabled:opacity-50 ${
-                    !address.trim() ? "cursor-not-allowed opacity-50" : ""
-                  }`}
+                  onClick={checkout}
+                  disabled={!hasItems || loading}
+                  className="mt-4 h-11 w-full rounded-full bg-[#e0483d] text-sm text-white disabled:opacity-50"
                 >
-                  {submitting ? "Placing order..." : "Checkout"}
+                  {loading ? "Placing order..." : "Checkout"}
                 </button>
+
                 {orderError && (
-                  <p role="alert" className="mt-2 text-center text-xs text-[#e0483d]">
+                  <p className="mt-2 text-center text-xs text-[#e0483d]">
                     {orderError}
                   </p>
                 )}
@@ -445,23 +591,27 @@ export default function CartSheet({
             </>
           )}
 
-          {/* Confirm remove */}
-          {pendingRemove && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 p-6">
-              <div role="alertdialog" aria-labelledby="remove-title" className="w-full rounded-2xl bg-white p-5">
-                <p id="remove-title" className="text-base font-semibold">
-                  Remove {pendingRemove.name}?
+          {/* REMOVE CONFIRMATION */}
+          {removeItemData && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 p-6">
+              <div className="w-full rounded-2xl bg-white p-5">
+                <p className="text-base font-semibold">
+                  Remove {removeItemData.name}?
                 </p>
-                <p className="mt-1 text-sm text-neutral-600">It will be taken out of your cart.</p>
+
+                <p className="mt-1 text-sm text-neutral-600">
+                  It will be taken out of your cart.
+                </p>
+
                 <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
-                    autoFocus
-                    onClick={() => setPendingRemove(null)}
+                    onClick={() => setRemoveItemData(null)}
                     className="rounded-full border border-neutral-300 px-4 py-1.5 text-sm"
                   >
                     Keep
                   </button>
+
                   <button
                     type="button"
                     onClick={confirmRemove}
@@ -476,68 +626,71 @@ export default function CartSheet({
         </div>
       </dialog>
 
-      {/* Login required: sheet-iin sibling (dotor n bish) baihaar ni backdrop click bubble hiihgui */}
+      {/* LOGIN DIALOG */}
       <dialog
         ref={loginRef}
         onClose={() => setShowLogin(false)}
         onClick={(e) => {
-          if (e.target === loginRef.current) setShowLogin(false);
+          if (e.target === loginRef.current) {
+            setShowLogin(false);
+          }
         }}
-        aria-labelledby="login-required-title"
         className="m-auto w-[min(460px,92vw)] rounded-3xl bg-white p-6 backdrop:bg-black/60"
       >
-        <div className="flex items-start justify-between gap-4">
-          <h2 id="login-required-title" className="text-xl font-semibold">
-            You need to log in first
-          </h2>
+        <div className="flex justify-between">
+          <h2 className="text-xl font-semibold">You need to log in first</h2>
+
           <button
             type="button"
             onClick={() => setShowLogin(false)}
-            aria-label="Close"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 hover:bg-neutral-200"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100"
           >
             <X className="size-4" />
           </button>
         </div>
+
         <div className="mt-8 grid grid-cols-2 gap-3">
           <Link
             href={loginHref}
-            onClick={leaveToAuth}
-            className="flex h-10 items-center justify-center rounded-md bg-neutral-900 text-sm text-white hover:bg-neutral-800"
+            onClick={goToAuth}
+            className="flex h-10 items-center justify-center rounded-md bg-neutral-900 text-sm text-white"
           >
             Log in
           </Link>
+
           <Link
             href={signupHref}
-            onClick={leaveToAuth}
-            className="flex h-10 items-center justify-center rounded-md border border-neutral-200 text-sm hover:bg-neutral-100"
+            onClick={goToAuth}
+            className="flex h-10 items-center justify-center rounded-md border border-neutral-200 text-sm"
           >
             Sign up
           </Link>
         </div>
       </dialog>
 
-      {/* Order placed: sibling dialog, sheet-iin ard haragdana */}
+      {/* SUCCESS DIALOG */}
       <dialog
         ref={successRef}
         onClose={() => setShowSuccess(false)}
         onClick={(e) => {
-          if (e.target === successRef.current) setShowSuccess(false);
+          if (e.target === successRef.current) {
+            setShowSuccess(false);
+          }
         }}
-        aria-labelledby="order-success-title"
         className="m-auto w-[min(460px,92vw)] rounded-3xl bg-white p-8 text-center backdrop:bg-black/60"
       >
-        <h2 id="order-success-title" className="text-xl font-semibold">
+        <h2 className="text-xl font-semibold">
           Your order has been successfully placed!
         </h2>
-        {/* Placeholder: ooriin illustration (balloon-toi hun) zurgaar solino uu */}
+
         <div className="mx-auto my-8 flex h-24 w-24 items-center justify-center rounded-full bg-[#e0483d] text-white">
-          <Check className="size-12" strokeWidth={2.5} />
+          <Check className="size-12" />
         </div>
+
         <Link
           href="/"
-          onClick={backToHome}
-          className="inline-flex h-10 items-center justify-center rounded-full bg-neutral-100 px-6 text-sm hover:bg-neutral-200"
+          onClick={backHome}
+          className="inline-flex h-10 items-center justify-center rounded-full bg-neutral-100 px-6 text-sm"
         >
           Back to home
         </Link>

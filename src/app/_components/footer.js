@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 export default function Footer({ categories = [] }) {
   return (
     <footer className={`${inter.className} bg-[#19191b] text-white`}>
-      {/* Red moving text */}
-      <div className="border-t-40 border-[#19191b] overflow-hidden bg-[#e0544f] py-5">
+      {/* Red text */}
+      <div className="overflow-hidden bg-[#e0544f] py-5">
         <div className="footer-marquee flex w-max">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
             <p key={item} className="px-8 text-[28px] font-semibold">
@@ -21,7 +21,7 @@ export default function Footer({ categories = [] }) {
         </div>
       </div>
 
-      {/* Main footer */}
+      {/* Footer content */}
       <div className="mx-auto max-w-350 px-[6%]">
         <div className="grid grid-cols-2 gap-10 py-16 md:grid-cols-4">
           {/* Logo */}
@@ -29,8 +29,7 @@ export default function Footer({ categories = [] }) {
             <img src="/Logo.png" alt="NomNom" className="h-10 w-10" />
 
             <p className="mt-2 font-bold">
-              Nom
-              <span className="text-[#e0544f]">Nom</span>
+              Nom<span className="text-[#e0544f]">Nom</span>
             </p>
 
             <p className="text-[11px]">Swift delivery</p>
@@ -40,23 +39,17 @@ export default function Footer({ categories = [] }) {
           <div>
             <h3 className="mb-4 text-sm text-neutral-500">NOMNOM</h3>
 
-            <p className="mb-4 text-sm">
-              <Link href="/" className="text-white hover:text-[#e0544f]">
-                Home
-              </Link>
-            </p>
+            <Link href="/" className="mb-4 block text-sm hover:text-[#e0544f]">
+              Home
+            </Link>
 
-            <p className="mb-4 text-sm">
-              <Link href="#" className="text-white hover:text-[#e0544f]">
-                Contact us
-              </Link>
-            </p>
+            <Link href="#" className="mb-4 block text-sm hover:text-[#e0544f]">
+              Contact us
+            </Link>
 
-            <p className="mb-4 text-sm">
-              <Link href="#" className="text-white hover:text-[#e0544f]">
-                Delivery zone
-              </Link>
-            </p>
+            <Link href="#" className="mb-4 block text-sm hover:text-[#e0544f]">
+              Delivery zone
+            </Link>
           </div>
 
           {/* Menu */}
@@ -64,31 +57,29 @@ export default function Footer({ categories = [] }) {
             <h3 className="mb-4 text-sm text-neutral-500">MENU</h3>
 
             <div className="grid grid-cols-2 gap-5">
-              {/* First column */}
+              {/* First 4 categories */}
               <div>
                 {categories.slice(0, 4).map((category) => (
-                  <p key={category.id} className="mb-4 text-sm">
-                    <a
-                      href={`#category-${category.id}`}
-                      className="text-white hover:text-[#e0544f]"
-                    >
-                      {category.label}
-                    </a>
-                  </p>
+                  <a
+                    key={category.id}
+                    href={`#category-${category.id}`}
+                    className="mb-4 block text-sm hover:text-[#e0544f]"
+                  >
+                    {category.label}
+                  </a>
                 ))}
               </div>
 
-              {/* Second column */}
+              {/* Other categories */}
               <div>
                 {categories.slice(4).map((category) => (
-                  <p key={category.id} className="mb-4 text-sm">
-                    <a
-                      href={`#category-${category.id}`}
-                      className="text-white hover:text-[#e0544f]"
-                    >
-                      {category.label}
-                    </a>
-                  </p>
+                  <a
+                    key={category.id}
+                    href={`#category-${category.id}`}
+                    className="mb-4 block text-sm hover:text-[#e0544f]"
+                  >
+                    {category.label}
+                  </a>
                 ))}
               </div>
             </div>
@@ -99,7 +90,6 @@ export default function Footer({ categories = [] }) {
             <h3 className="mb-4 text-sm text-neutral-500">FOLLOW US</h3>
 
             <div className="flex">
-              {/* Facebook */}
               <a href="#" aria-label="Facebook">
                 <Button variant="ghost" size="icon">
                   <Image
@@ -111,7 +101,6 @@ export default function Footer({ categories = [] }) {
                 </Button>
               </a>
 
-              {/* Instagram */}
               <a href="#" aria-label="Instagram">
                 <Button variant="ghost" size="icon">
                   <Image

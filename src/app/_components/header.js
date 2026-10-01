@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { MapPin, ShoppingCart, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/app/(provider)/cart-provider";
@@ -11,8 +10,8 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-between bg-[#19191b] px-[6%] py-4">
+      {/* Logo */}
       <div className="flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/Logo.png"
           alt="NomNom logo"
@@ -28,28 +27,28 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Right side */}
       <div className="flex items-center gap-4">
-        {/* Hayag ni sagsnii sheet dotor oruulagddag tul darahad sheet neegdene */}
+        {/* Address */}
         <Button
-          type="button"
           onClick={openCart}
           className="flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-normal text-[#ec5b48] hover:bg-white/90"
         >
           <MapPin className="h-5 w-5" />
 
           <span>Delivery address:</span>
-          <span className="max-w-[200px] truncate text-neutral-600">
+
+          <span className="max-w-50 truncate text-neutral-600">
             {address.trim() || "Add Location"}
           </span>
 
           <ChevronRight className="h-5 w-5 text-neutral-600" />
         </Button>
 
+        {/* Cart */}
         <Button
-          type="button"
           size="icon"
           onClick={openCart}
-          aria-label="Open cart"
           className="relative h-11 w-11 rounded-full bg-white hover:bg-white/90"
         >
           <ShoppingCart className="h-5 w-5 text-black" />
@@ -61,7 +60,7 @@ export default function Header() {
           )}
         </Button>
 
-        {/* Nevtreegui bol Log in / Sign up, nevtersen bol email + Sign out */}
+        {/* User */}
         <UserMenu />
       </div>
     </header>

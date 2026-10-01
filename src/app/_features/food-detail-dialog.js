@@ -3,23 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/app/(provider)/cart-provider";
 
-const formatPrice = (n) => `$${n.toFixed(2)}`;
-
-// Usage: <FoodDetailDialog food={food} open={open} onClose={() => setOpen(false)} />
-// food: { id, name, price, image, description, ingredients? (string[]) }
 export default function FoodDetailDialog({ food, open, onClose, onAdded }) {
   const dialogRef = useRef(null);
   const { addItem } = useCart();
+
   const [quantity, setQuantity] = useState(1);
 
-  // Native <dialog> gives us focus trapping, Esc to close and a backdrop.
+  // Dialog нээх / хаах
   useEffect(() => {
     const dialog = dialogRef.current;
+
     if (!dialog) return;
+
     if (open && !dialog.open) {
       setQuantity(1);
       dialog.showModal();
-    } else if (!open && dialog.open) {
+    }
+
+    if (!open && dialog.open) {
       dialog.close();
     }
   }, [open]);
@@ -27,83 +28,96 @@ export default function FoodDetailDialog({ food, open, onClose, onAdded }) {
   if (!food) return null;
 
   const total = food.price * quantity;
-  const ingredients = Array.isArray(food.ingredients) ? food.ingredients.join(", ") : null;
 
-  const handleAdd = () => {
+  const ingredients = Array.isArray(food.ingredients)
+    ? food.ingredients.join(", ")
+    : "";
+
+  // Cart-д нэмэх
+  function handleAdd() {
     addItem(food, quantity);
+
     onAdded?.();
     onClose();
-  };
+  }
 
   return (
     <dialog
       ref={dialogRef}
       onClose={onClose}
       onClick={(e) => {
-        // A click on the backdrop lands on the <dialog> element itself.
-        if (e.target === dialogRef.current) onClose();
+        if (e.target === dialogRef.current) {
+          onClose();
+        }
       }}
-      aria-labelledby={`food-dialog-title-${food.id}`}
       className="m-auto w-[min(860px,92vw)] overflow-hidden rounded-3xl bg-white p-0 backdrop:bg-black/60"
     >
       <div className="relative grid gap-6 p-6 md:grid-cols-2">
+        {/* Food image */}
         <img
           src={food.image}
           alt={food.name}
           className="h-64 w-full rounded-2xl object-cover md:h-full md:min-h-[360px]"
         />
 
+        {/* Food information */}
         <div className="flex flex-col">
+          {/* Close button */}
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
-            className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+            className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 hover:bg-neutral-100"
           >
             ✕
           </button>
 
-          <h2
-            id={`food-dialog-title-${food.id}`}
-            className="pr-12 text-3xl font-semibold text-red-500"
-          >
+          {/* Name */}
+          <h2 className="pr-12 text-3xl font-semibold text-red-500">
             {food.name}
           </h2>
 
+          {/* Description */}
           <p className="mt-4 text-neutral-900">{food.description}</p>
+
+          {/* Ingredients */}
           {ingredients && (
             <p className="mt-3 text-sm text-neutral-600">
-              <span className="font-medium text-neutral-900">Ingredients: </span>
+              <span className="font-medium text-neutral-900">Ingredients:</span>{" "}
               {ingredients}
             </p>
           )}
 
+          {/* Bottom */}
           <div className="mt-auto pt-8">
+            {/* Price + quantity */}
             <div className="flex items-end justify-between">
+              {/* Total price */}
               <div>
                 <p className="text-neutral-900">Total price</p>
-                <p className="text-2xl font-semibold" aria-live="polite">
-                  {formatPrice(total)}
-                </p>
+
+                <p className="text-2xl font-semibold">${total.toFixed(2)}</p>
               </div>
 
+              {/* Quantity */}
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  disabled={quantity <= 1}
-                  aria-label="Decrease quantity"
+                  onClick={() => {
+                    if (quantity > 1) {
+                      setQuantity(quantity - 1);
+                    }
+                  }}
+                  disabled={quantity === 1}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-200 text-lg disabled:opacity-40"
                 >
                   −
                 </button>
-                <span className="w-4 text-center font-medium" aria-live="polite">
-                  {quantity}
-                </span>
+
+                <span className="w-4 text-center font-medium">{quantity}</span>
+
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  aria-label="Increase quantity"
+                  onClick={() => setQuantity(quantity + 1)}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-900 text-lg"
                 >
                   +
@@ -111,6 +125,7 @@ export default function FoodDetailDialog({ food, open, onClose, onAdded }) {
               </div>
             </div>
 
+            {/* Add to cart */}
             <button
               type="button"
               onClick={handleAdd}
